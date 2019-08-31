@@ -12,6 +12,7 @@ from stimulus_params import stim_dict
 import microcircuit_tools as tools
 
 run_sim = False
+run_calc = False
 corr_roi = [1200, 2200]
 
 # correlation
@@ -74,6 +75,7 @@ def network_corr(path, name, begin, end):
 
     return net_coef_arr
 
+
 if run_sim:
     net = network.Network(sim_dict, net_dict, stim_dict)
     net.setup()
@@ -82,10 +84,26 @@ if run_sim:
         sim_dict['data_path'], 'spike_detector', 2000.0, 2200.0
     )
     plt.close()
-coef_arr = network_corr(
-    sim_dict['data_path'], 'spike_detector', corr_roi[0], corr_roi[1])
+
+if run_calc:
+    tmp_arr = network_corr(
+        sim_dict['data_path'], 'spike_detector', corr_roi[0], corr_roi[1])
+    np.save('coef_arr.npy', tmp_arr)
+
+coef_arr = np.load('coef_arr.npy')
 print(coef_arr)
-plt.plot(coef_arr.T)
-plt.ylim((-0.1, 0.25))
-plt.savefig('corr_model.png')
-plt.show()
+
+labels = ['E', 'PV', 'SOM', 'VIP']
+tools.interaction_barplot(coef_arr, -0.1, 0.25, labels, 'mean corr coef')
+# x = np.arange(len(labels))
+# barwidth = 0.1
+# fig, ax = plt.subplots(figsize=(12, 12))
+# for i in range(4):
+#     ax.bar(x + barwidth*(i - 1.5), coef_arr[i, :], barwidth, label=labels[i])
+# ax.set_xticks(x)
+# ax.set_xticklabels(labels)
+# ax.legend()
+# plt.ylim((-0.1, 0.25))
+# fig.tight_layout()
+# plt.savefig('corr_model.png')
+# plt.show()

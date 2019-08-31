@@ -14,6 +14,44 @@ subtype_label = ['E', 'PV+', 'SOM+', 'VIP+']
 use_box_xlim = False
 box_xlim = 51.0
 
+# plots
+def interaction_barplot(arr, y_bottom, y_top, labels=None, ylabel=None):
+    arr_len = len(arr)
+    arr_shape = np.array(arr).shape
+    if len(arr_shape) is not 2:
+        print('array not a 2-D array')
+        return
+    elif arr_shape[0] != arr_shape[1]:
+        print('array not a square array')
+        return
+
+    if isinstance(labels, list) is not True:
+        print('labels not a list')
+        labels = list(range(arr_len))
+    elif len(labels) > arr_len:
+        print('labels too long, use the first {}'.format(arr_len))
+        labels = labels[:len(arr)]
+    elif len(labels) < arr_len:
+        print('labels too short')
+        labels = list(range(arr_len))
+
+    labels = np.array(labels).astype(str)
+    x = np.arange(arr_len)
+    barwidth = 0.75/arr_len
+    fig, ax = plt.subplots(figsize=(12, 12))
+    for i in range(4):
+        ax.bar(x + barwidth * i, arr[i, :], barwidth, label=labels[i])
+    ax.legend(bbox_to_anchor=(0., 1.2, 1.0, 0.1),
+              ncol=2, mode="expand", borderaxespad=0.)
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels)
+    ax.set_ylabel(ylabel)
+    # ax.legend()
+    plt.ylim((y_bottom, y_top))
+    fig.tight_layout()
+    plt.savefig('interaction_barplot.png')
+    plt.show()
+
 # correlation
 def get_mean_corr(list_1, list_2, same_pop=False):
     coef_list = []
