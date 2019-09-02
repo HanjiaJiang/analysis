@@ -53,17 +53,19 @@ def interaction_barplot(arr, y_bottom, y_top, labels=None, ylabel=None):
     plt.show()
 
 # correlation
-def get_mean_corr(list_1, list_2, same_pop=False):
+def get_mean_corr(list_1, list_2=None):
     coef_list = []
     for i, hist1 in enumerate(list_1):
-        if not same_pop:
+        if list_2 is None:  # same population
+            list_2_tmp = list_1[i + 1:]
+        else:
             list_2_tmp = list_2
-        else:   # same population, avoid repetition
-            list_2_tmp = list_2[i + 1:]
         for j, hist2 in enumerate(list_2_tmp):
             if np.sum(hist1) != 0 and np.sum(hist2) != 0:
                 coef = np.corrcoef(hist1, hist2)[0, 1]
                 coef_list.append(coef)
+            # else:
+            #     print('{} in list1 or {} in list2 no spikes'.format(i, j))
     return np.mean(coef_list)
 
 def print2txt_init():

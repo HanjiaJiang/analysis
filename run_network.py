@@ -11,67 +11,78 @@ from sim_params import sim_dict
 from stimulus_params import stim_dict
 import microcircuit_tools as tools
 
-run_sim = False
-run_calc = False
-corr_roi = [1200, 2200]
+run_sim = True
+run_calc = True
+stim_ts = np.arange(2000.0, 62000.0, 3000.0)
+stim_len = 1000.0
+bin_width = 125.0
 
-# correlation
-# def get_mean_corr(list_1, list_2, same_pop=False):
-#     coef_list = []
-#     for i, hist1 in enumerate(list_1):
-#         if not same_pop:
-#             list_2_tmp = list_2
-#         else:   # same population, avoid repetition
-#             list_2_tmp = list_2[i + 1:]
-#         for j, hist2 in enumerate(list_2_tmp):
-#             if np.sum(hist1) != 0 and np.sum(hist2) != 0:
-#                 coef = np.corrcoef(hist1, hist2)[0, 1]
-#                 coef_list.append(coef)
-#     return np.mean(coef_list)
-
-
-def network_corr(path, name, begin, end):
+def network_corr(path, name, stim_ts, stim_len, bin_width):
+    print('start data processing...')
+    begin = stim_ts[0]
+    end = stim_ts[-1] + stim_len
     data_all, gids = tools.load_spike_times(path, name, begin, end)
-    l23_hist_arr = []   # 4 pops x neuron counts in each pop x histogram
-    corr_bin_width = 125.0
+    l23_hist_arr = []   # pop x stim x n x bin
+    # corr_bin_width = 125.0
     net_coef_arr = np.full((4, 4), np.nan)
+    # if population >= 4
     if len(data_all) >= 4:
-        # collect histograms
+        # loop population
         for h in range(4):
-            pop_nids = (data_all[h][:, 0])
-            pop_times = (data_all[h][:, 1])
-            pop_hist_list = []
-            n_cnt = gids[h][1] - gids[h][0] + 1
-            shuffled_n_list = sample(list(range(gids[h][0], gids[h][1] + 1)),
-                                     n_cnt)
-
-            # get historgram of each neuron
-            for n in shuffled_n_list:
-                # spike times of each neuron
-                times = pop_times[pop_nids == n]
-                if len(times) > 0:
+            # ids and times of all cells
+            pop_nids = data_all[h][:, 0]
+            pop_times = data_all[h][:, 1]
+            # histogram of all stimuli
+            hists_all_stim = [] # stim x n x bin
+            # cell list
+            ns = list(range(gids[h][0], gids[h][1] + 1))
+            # shuffle cell list
+            if len(ns) > 500:
+                ns = sample(list(range(gids[h][0], gids[h][1]+1)), 500)
+            # collect histograms
+            for stim_t in stim_ts:
+                hists = []  # of all cells
+                begin = stim_t
+                end = stim_t + stim_len
+                ids_stim = pop_nids[(pop_times >= begin) & (pop_times < end)]
+                times_stim = \
+                    pop_times[(pop_times >= begin) & (pop_times < end)]
+                for n in ns:
+                    # spike times of each neuron
+                    times = times_stim[ids_stim == n]
+                    # if len(times) > 0:
                     # make histogram
                     hist, bin_edges = np.histogram(
                         times,
-                        int((end - begin) / corr_bin_width), # nr. of bins
-                        (begin, end))   # window of analysis
-                    pop_hist_list.append(hist)
-                    # if len(pop_hist_list) >= 50:
-                    #     break
+                        int((end - begin) / bin_width),  # nr. of bins
+                        (begin, end))  # window of analysis
+                    hists.append(hist)
+                hists_all_stim.append(hists)
 
-            l23_hist_arr.append(pop_hist_list)
+            # subtract mean values to get 'noise' data
+            hists_all_stim = hists_all_stim - np.mean(hists_all_stim, axis=0)
+            for i, hists in enumerate(hists_all_stim):
+                print('pop {} stim {} sample n = {}'.format(h, i, len(hists)))
+            l23_hist_arr.append(hists_all_stim)
 
-        for i, pop_hist_list_1 in enumerate(l23_hist_arr):
-            for j, pop_hist_list_2 in enumerate(l23_hist_arr):
-                if j == i:
-                    net_coef_arr[i, j] = \
-                        tools.get_mean_corr(pop_hist_list_1, pop_hist_list_2, True)
-                elif j > i:
-                    net_coef_arr[i, j] = \
-                        tools.get_mean_corr(pop_hist_list_1, pop_hist_list_2, False)
-                    net_coef_arr[j, i] = net_coef_arr[i, j]
-                else:
-                    pass
+        print('start calculate corr...')
+        # calculate corr
+        for i, hists_all_stim_1 in enumerate(l23_hist_arr):
+            for j, hists_all_stim_2 in enumerate(l23_hist_arr):
+                print('pop {} vs. {}'.format(i, j))
+                if j >= i:
+                    coefs = []
+                    if j == i:  # same population
+                        for hists in hists_all_stim_1:
+                            coef = tools.get_mean_corr(hists)
+                            if coef != np.nan:
+                                coefs.append(coef)
+                    elif j > i: # different population
+                        for k, hists in enumerate(hists_all_stim_1):
+                            coef = tools.get_mean_corr(hists, hists_all_stim_2[k])
+                            if coef != np.nan:
+                                coefs.append(coef)
+                    net_coef_arr[i, j] = net_coef_arr[j, i] = np.mean(coefs)
 
     return net_coef_arr
 
@@ -81,13 +92,13 @@ if run_sim:
     net.setup()
     net.simulate()
     tools.plot_raster(
-        sim_dict['data_path'], 'spike_detector', 2000.0, 2200.0
+        sim_dict['data_path'], 'spike_detector', 1900.0, 2100.0
     )
     plt.close()
 
 if run_calc:
     tmp_arr = network_corr(
-        sim_dict['data_path'], 'spike_detector', corr_roi[0], corr_roi[1])
+        sim_dict['data_path'], 'spike_detector', stim_ts, stim_len, bin_width)
     np.save('coef_arr.npy', tmp_arr)
 
 coef_arr = np.load('coef_arr.npy')
