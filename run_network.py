@@ -29,41 +29,45 @@ def network_corr(path, name, stim_ts, stim_len, bin_width):
     if len(data_all) >= 4:
         # loop population
         for h in range(4):
-            # ids and times of all cells
-            pop_nids = data_all[h][:, 0]
-            pop_times = data_all[h][:, 1]
-            # histogram of all stimuli
-            hists_all_stim = [] # stim x n x bin
-            # cell list
-            ns = list(range(gids[h][0], gids[h][1] + 1))
-            # shuffle cell list
-            if len(ns) > 500:
-                ns = sample(list(range(gids[h][0], gids[h][1]+1)), 500)
-            # collect histograms
-            for stim_t in stim_ts:
-                hists = []  # of all cells
-                begin = stim_t
-                end = stim_t + stim_len
-                ids_stim = pop_nids[(pop_times >= begin) & (pop_times < end)]
-                times_stim = \
-                    pop_times[(pop_times >= begin) & (pop_times < end)]
-                for n in ns:
-                    # spike times of each neuron
-                    times = times_stim[ids_stim == n]
-                    # if len(times) > 0:
-                    # make histogram
-                    hist, bin_edges = np.histogram(
-                        times,
-                        int((end - begin) / bin_width),  # nr. of bins
-                        (begin, end))  # window of analysis
-                    hists.append(hist)
-                hists_all_stim.append(hists)
+            if len(data_all[h]) != 0:
+                # ids and times of all cells
+                pop_nids = data_all[h][:, 0]
+                pop_times = data_all[h][:, 1]
+                # histogram of all stimuli
+                hists_all_stim = [] # stim x n x bin
+                # cell list
+                ns = list(range(gids[h][0], gids[h][1] + 1))
+                # shuffle cell list
+                if len(ns) > 500:
+                    ns = sample(list(range(gids[h][0], gids[h][1]+1)), 500)
+                # collect histograms
+                for stim_t in stim_ts:
+                    hists = []  # of all cells
+                    begin = stim_t
+                    end = stim_t + stim_len
+                    ids_stim = pop_nids[(pop_times >= begin) & (pop_times < end)]
+                    times_stim = \
+                        pop_times[(pop_times >= begin) & (pop_times < end)]
+                    for n in ns:
+                        # spike times of each neuron
+                        times = times_stim[ids_stim == n]
+                        # if len(times) > 0:
+                        # make histogram
+                        hist, bin_edges = np.histogram(
+                            times,
+                            int((end - begin) / bin_width),  # nr. of bins
+                            (begin, end))  # window of analysis
+                        hists.append(hist)
+                    hists_all_stim.append(hists)
 
-            # subtract mean values to get 'noise' data
-            hists_all_stim = hists_all_stim - np.mean(hists_all_stim, axis=0)
-            for i, hists in enumerate(hists_all_stim):
-                print('pop {} stim {} sample n = {}'.format(h, i, len(hists)))
-            l23_hist_arr.append(hists_all_stim)
+                # subtract mean values to get 'noise' data
+                hists_all_stim = hists_all_stim - np.mean(hists_all_stim, axis=0)
+                for i, hists in enumerate(hists_all_stim):
+                    print('pop {} stim {} sample n = {}'.format(h, i, len(hists)))
+                l23_hist_arr.append(hists_all_stim)
+            else:
+                print('population {} no data'.format(h))
+                break
 
         print('start calculate corr...')
         # calculate corr
@@ -86,6 +90,8 @@ def network_corr(path, name, stim_ts, stim_len, bin_width):
 
     return net_coef_arr
 
+
+net_dict['conn_probs'] = np.load('conn_probs.npy')
 
 if run_sim:
     net = network.Network(sim_dict, net_dict, stim_dict)
