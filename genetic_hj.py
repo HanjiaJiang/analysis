@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 import time
 from batch_genetic import batch_genetic
 
-on_server = False
+on_server = True
 N_ind = 20
 p_cx = 0.8
 p_mut = 0.1
@@ -116,23 +116,26 @@ def mutSNP1(ind, p):
 
 def do_and_check(survivors, g):
     if on_server:
-        # do the simulations
-        batch_genetic(survivors, g)
-        fin_flag = False    # finish flag
-        t0 = time.time()
-        # check results
-        while fin_flag is False:
-            time.sleep(60)
-            fin_flag = True
-            for i in range(len(survivors)):
-                if os.path.isfile(
-                        os.getcwd() +
-                        '/output/g={}_ind={}/'.format(g, i) +
-                        'coef_arr.npy') is False:
-                    fin_flag = False
-            # break if this generation takes too long
-            if time.time() - t0 > (12*3600):
-                break
+        # divide into groups of 5
+        for i in range(int(len(survivors)/5)):
+            # do the simulations
+            map_ids = np.arange(i * 5, (i + 1) * 5)
+            batch_genetic(survivors[i * 5:(i + 1) * 5], g, map_ids)
+            fin_flag = False    # finish flag
+            t0 = time.time()
+            # check results
+            while fin_flag is False:
+                time.sleep(60)
+                fin_flag = True
+                for map_id in map_ids:
+                    if os.path.isfile(
+                            os.getcwd() +
+                            '/output/g={}_ind={}/'.format(g, map_id) +
+                            'coef_arr.npy') is False:
+                        fin_flag = False
+                # break if this generation takes too long
+                if time.time() - t0 > (4*3600):
+                    break
     else:
         for i in range(len(survivors)):
             datapath = os.getcwd()+'/output/g={}_ind={}/'.format(g, i)

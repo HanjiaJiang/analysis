@@ -2,7 +2,7 @@ import os
 import numpy as np
 
 
-def batch_genetic(conn_maps, g):
+def batch_genetic(conn_maps, g, map_ids):
     simname = 'INs_genetic'
 
     # where your python code for the microcircuit model resides
@@ -17,9 +17,9 @@ def batch_genetic(conn_maps, g):
     jdf_name = simname + '_batch.jdf'
 
     for i, map in enumerate(conn_maps):
-        print(map)
+        # print(map)
         # output directory for this parameter combination
-        this_output_dir = 'g={}_ind={}'.format(g, i)
+        this_output_dir = 'g={}_ind={}'.format(g, map_ids[i])
         full_output_dir = output_dir + this_output_dir
 
         # create directory if it doesn't exist yet

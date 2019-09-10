@@ -2,9 +2,9 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 from random import sample
-on_server = False
+on_server = True
 if not on_server:
-    sys.path.insert(1, '/home/hanjia/Documents/Potjans_2014_selectivity/')
+    sys.path.insert(1, '/home/hanjia/Documents/microcircuit/')
 import network
 from network_params import net_dict
 from sim_params import sim_dict
@@ -13,7 +13,7 @@ import microcircuit_tools as tools
 
 run_sim = True
 run_calc = True
-stim_ts = np.arange(2000.0, 62000.0, 3000.0)
+stim_ts = np.arange(2000.0, 12000.0, 1000.0)
 stim_len = 1000.0
 bin_width = 125.0
 
