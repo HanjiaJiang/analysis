@@ -254,7 +254,7 @@ def plot_raster(path, name, begin, end):
         )
     fig.tight_layout()
     plt.savefig(os.path.join(path, 'raster_plot.png'), dpi=300)
-    # plt.show()
+    plt.close()
 
 
 def plot_psth(path, name, begin, end):
@@ -295,7 +295,7 @@ def plot_psth(path, name, begin, end):
     plt.xlabel('t (ms)')
     plt.ylabel('spikes')
     plt.savefig(os.path.join(path, 'psth.png'))
-    # plt.show()
+    plt.close()
 
 
 def boxplot(net_dict, path):
@@ -346,6 +346,6 @@ def boxplot(net_dict, path):
     plt.yticks(label_pos, pop_names)
     fig.tight_layout()
     plt.savefig(os.path.join(path, 'box_plot.png'), dpi=300)
-    # plt.show()
+    plt.close()
 
 

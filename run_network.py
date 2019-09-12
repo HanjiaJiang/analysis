@@ -106,6 +106,8 @@ if run_calc:
     tmp_arr = network_corr(
         sim_dict['data_path'], 'spike_detector', stim_ts, stim_len, bin_width)
     np.save('coef_arr.npy', tmp_arr)
+    tools.fire_rate(sim_dict['data_path'], 'spike_detector', 2000.0, 12000.0)
+    tools.boxplot(net_dict, sim_dict['data_path'])
 
 coef_arr = np.load('coef_arr.npy')
 print(coef_arr)
