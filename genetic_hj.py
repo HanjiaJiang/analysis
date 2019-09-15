@@ -1,14 +1,12 @@
 '''
-In this script we start with a population of random sequences of letters and
-punctuation marks of a length len('Hello world!') and evolve towards the
-friendly greeting.
+Genetic algorithm for connectivity map
+by Hanjia
 
 Idea taken from:
 https://www.electricmonk.nl/log/2011/09/28/evolutionary-algorithm-evolving-hello-world/
 '''
 
 import os
-import string
 import numpy as np
 from random import choice, randint
 from deap import base, creator, tools
@@ -17,12 +15,11 @@ import time
 from batch_genetic import batch_genetic
 
 on_server = True
-N_ind = 20
-p_cx = 0.8
-p_mut = 0.1
-max_generations = 20
-# this will be used as a global variable in a few functions
-# chars = string.ascii_letters + string.punctuation + ' '
+N_ind = 20      # number of individuals in a population
+p_cx = 0.8      # probability of cross-over
+p_mut = 0.1     # probability of mutation
+max_generations = 40
+mut_degrees = [0.3, 0.1]    # s.d. of mutation range (unit: times of mean)
 
 origin_map = np.array([
     [0.0872, 0.3173, 0.4612, 0.0448, 0.1056, 0.4011, 0.0374, 0.0234, 0.09,
@@ -60,11 +57,6 @@ target_corr = np.array([[0.123, 0.145, 0.112, 0.113],
                         [0.112, 0.163, 0.211, 0.058],
                         [0.113, 0.193, 0.058, 0.186]])
 
-init_arr = np.array([[0.01683036, 0.00502279, -0.0081311, 0.00169314],
-                     [0.00502279, 0.00971267, -0.01755271, 0.01690588],
-                     [-0.0081311, -0.01755271, 0.0321832, -0.03122659],
-                     [0.00169314, 0.01690588, -0.03122659, 0.02773608]])
-
 workingdir = os.getcwd()
 
 
@@ -80,17 +72,19 @@ def create_individual():
 
 
 def evaluate(result, target):
-    '''
-    This function assumes that individual and target are of the same length!
-    '''
     fitness = 0
-    for i, j in zip(target.flatten(), result.flatten()):
-        # print(i, j)
-        if np.isnan(i) or np.isnan(j):
+    t_arr = target.flatten()
+    r_arr = result.flatten()
+    # desert repeated elements; to be improved
+    t_arr = np.concatenate((
+        t_arr[0:4], t_arr[5:8], t_arr[10:12], t_arr[15:16]))
+    r_arr = np.concatenate((
+        r_arr[0:4], r_arr[5:8], r_arr[10:12], r_arr[15:16]))
+    for t, r in zip(t_arr, r_arr):
+        if np.isnan(t) or np.isnan(r):
             fitness = 10.0
-            # fitness = np.inf
             break
-        dif = (i - j) ** 2
+        dif = (t - r) ** 2
         fitness += dif
     return (fitness,)
 
@@ -131,9 +125,9 @@ def mutSNP1(ind, p):
         for j, item in enumerate(row):
             if np.random.random() <= p:
                 if i < 4 and j < 4:  # L2/3
-                    mut_sd = 0.3
+                    mut_sd = mut_degrees[0]
                 else:  # other layers
-                    mut_sd = 0.1
+                    mut_sd = mut_degrees[1]
                 new[i][j] = item + mut_sd * item * (np.random.randn())
     return type(ind)(new)
 
@@ -154,7 +148,7 @@ def do_and_check(survivors, g):
                 for map_id in map_ids:
                     if os.path.isfile(
                                 workingdir +
-                                '/output/g={}_ind={}/coef_arr.npy'.format(g, map_id)
+                                '/output/g={0:2d}_ind={1:2d}/coef_arr.npy'.format(g, map_id)
                     ) is False:
                         fin_flag = False
                 # break if this generation takes too long
@@ -162,7 +156,7 @@ def do_and_check(survivors, g):
                     break
     else:
         for i in range(len(survivors)):
-            datapath = workingdir + '/output/g={}_ind={}/'.format(g, i)
+            datapath = workingdir + '/output/g={0:2d}_ind={1:2d}/'.format(g, i)
             if os.path.isdir(datapath) is False:
                 os.mkdir(datapath)
             np.save(datapath + 'coef_arr.npy',
@@ -188,17 +182,12 @@ box.register('select', tools.selTournament, tournsize=3)
 
 ### INITIALIZATION
 population = box.pop(n=N_ind)
-for ind in population:
-    ind.fitness.values = box.evaluate(init_arr, target_corr)
-#
-# ### EVOLUTION
-fits = [i.fitness.values[0] for i in population]
-# print(fits)
-# for i in np.argsort(fits):
-#     print(population[i], population[i].fitness.values)
 
+# ### EVOLUTION
 g = 0
+fits = [10 for i in population]
 fitness_evolved = np.zeros((max_generations, 5))
+best_inds_evolved = np.zeros((max_generations, 5))
 while min(fits) > 0 and g < max_generations:
     ## SELECTION
     survivors = box.select(population, len(population))
@@ -227,7 +216,7 @@ while min(fits) > 0 and g < max_generations:
     # EVALUATION
     for i, ind in enumerate(survivors):
         corr_file = os.getcwd() + \
-                    '/output/g={}_ind={}/'.format(g, i) + \
+                    '/output/g={0:2d}_ind={1:2d}/'.format(g, i) + \
                     'coef_arr.npy'
         if os.path.isfile(corr_file):
             result_arr = np.load(corr_file)
@@ -243,8 +232,15 @@ while min(fits) > 0 and g < max_generations:
     fitness_evolved[g, :] = np.array(
         [population[i].fitness.values for i in np.argsort(fits)[:5]]).reshape(
         5)
+    inds = np.arange(0, 20)
+    best_inds_evolved[g, :] = np.array(
+        [inds[i] for i in np.argsort(fits)[:5]]).reshape(
+        5)
     np.save(
-        workingdir + '/output/fitness_evolved_g{}.npy'.format(g),
+        workingdir + '/output/fitness_evolved_g{:2d}.npy'.format(g),
+        fitness_evolved)
+    np.save(
+        workingdir + '/output/best_inds_g{:2d}.npy'.format(g),
         fitness_evolved)
     g += 1
 
@@ -253,7 +249,7 @@ while min(fits) > 0 and g < max_generations:
 #     print(population[i], population[i].fitness.values)
 
 plt.figure()
-plt.plot(np.arange(g), fitness_evolved[:g, :])
+plt.plot(np.arange(g), fitness_evolved[:g, :], 'b.')
 plt.hlines(0, 0, g + 10, 'k', linestyles='--')
 plt.xlabel('Number of generations')
 plt.ylabel('Fitness to minimize')
