@@ -19,7 +19,7 @@ def batch_genetic(conn_maps, g, map_ids):
     for i, map in enumerate(conn_maps):
         # print(map)
         # output directory for this parameter combination
-        this_output_dir = 'g={0:2d}_ind={1:2d}'.format(g, map_ids[i])
+        this_output_dir = 'g={0:02d}_ind={1:02d}'.format(g, map_ids[i])
         full_output_dir = output_dir + this_output_dir
 
         # create directory if it doesn't exist yet

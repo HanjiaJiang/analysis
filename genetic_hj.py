@@ -17,9 +17,9 @@ from batch_genetic import batch_genetic
 on_server = True
 N_ind = 20      # number of individuals in a population
 p_cx = 0.8      # probability of cross-over
-p_mut = 0.1     # probability of mutation
+p_mut = 0.2     # probability of mutation
 max_generations = 40
-mut_degrees = [0.3, 0.1]    # s.d. of mutation range (unit: times of mean)
+mut_degrees = [0.3, 0.0]    # s.d. of mutation range (unit: times of mean)
 
 origin_map = np.array([
     [0.0872, 0.3173, 0.4612, 0.0448, 0.1056, 0.4011, 0.0374, 0.0234, 0.09,
@@ -61,14 +61,13 @@ workingdir = os.getcwd()
 
 
 def create_individual():
-    new_map = origin_map + np.multiply(0.5 * origin_map,
-                                       np.random.randn(13, 13))
-    return new_map
+    return origin_map
 
 
-# def create_individual(target='Hello world!'):
-#     new_str = ''.join(choice(chars) for i in range(len(target)))
-#     return new_str
+# def create_individual():
+#     new_map = origin_map + np.multiply(0.1 * origin_map,
+#                                        np.random.randn(13, 13))
+#     return new_map
 
 
 def evaluate(result, target):
@@ -100,20 +99,6 @@ def cxOnePointStr(ind1, ind2):
 
     return indCls(new1), indCls(new2)
 
-
-# def mutSNP(ind, p):
-#     '''
-#     Mimics single nucleotide polymorphism, but applied to all elements of ind.
-#     '''
-#     assert(0 <= p <= 1)
-#     new = list(ind)
-#     for i in range(len(new)):
-#         if np.random.random() <= p:
-#             new[i] = choice(chars)
-#             #print(new[i]+'\t', end='')
-#     #print('\n')
-#     new = ''.join(new)
-#     return type(ind)(new)
 
 def mutSNP1(ind, p):
     '''
@@ -148,7 +133,7 @@ def do_and_check(survivors, g):
                 for map_id in map_ids:
                     if os.path.isfile(
                                 workingdir +
-                                '/output/g={0:2d}_ind={1:2d}/coef_arr.npy'.format(g, map_id)
+                                '/output/g={0:02d}_ind={1:02d}/coef_arr.npy'.format(g, map_id)
                     ) is False:
                         fin_flag = False
                 # break if this generation takes too long
@@ -156,7 +141,7 @@ def do_and_check(survivors, g):
                     break
     else:
         for i in range(len(survivors)):
-            datapath = workingdir + '/output/g={0:2d}_ind={1:2d}/'.format(g, i)
+            datapath = workingdir + '/output/g={0:02d}_ind={1:02d}/'.format(g, i)
             if os.path.isdir(datapath) is False:
                 os.mkdir(datapath)
             np.save(datapath + 'coef_arr.npy',
@@ -187,12 +172,13 @@ population = box.pop(n=N_ind)
 g = 0
 fits = [10 for i in population]
 fitness_evolved = np.zeros((max_generations, 5))
-best_inds_evolved = np.zeros((max_generations, 5))
-while min(fits) > 0 and g < max_generations:
+better_inds_evolved = np.zeros((max_generations, 5))
+# Target: fitness of pre- vs. post-learning exp. data is 0.036
+# which means average difference for individual connection is 0.06
+# so evolved fitness should be at least smaller than this level
+while min(fits) > 0.025 and g < max_generations:
     ## SELECTION
     survivors = box.select(population, len(population))
-    # since all our functions for genetic modifications create new individuals
-    # instead of changing them in place, we do not need to clone the survivors
 
     ## GENETIC OPERATIONS
     # crossing-over
@@ -210,14 +196,12 @@ while min(fits) > 0 and g < max_generations:
     for i, ind in enumerate(survivors):
         survivors[i] = box.mutate(ind, p_mut)
 
-    # simulation
+    # SIMULATION
     do_and_check(survivors, g)
 
     # EVALUATION
     for i, ind in enumerate(survivors):
-        corr_file = os.getcwd() + \
-                    '/output/g={0:2d}_ind={1:2d}/'.format(g, i) + \
-                    'coef_arr.npy'
+        corr_file = os.getcwd() + '/output/g={0:02d}_ind={1:02d}/'.format(g, i) + 'coef_arr.npy'
         if os.path.isfile(corr_file):
             result_arr = np.load(corr_file)
         else:
@@ -229,24 +213,30 @@ while min(fits) > 0 and g < max_generations:
     print('generation {} min. FitMin is {}'.format(g, min(fits)))
     print('fitness values = {}'.format(fits))
 
+    # save fitness values
     fitness_evolved[g, :] = np.array(
         [population[i].fitness.values for i in np.argsort(fits)[:5]]).reshape(
         5)
-    inds = np.arange(0, 20)
-    best_inds_evolved[g, :] = np.array(
-        [inds[i] for i in np.argsort(fits)[:5]]).reshape(
-        5)
     np.save(
-        workingdir + '/output/fitness_evolved_g{:2d}.npy'.format(g),
+        workingdir + '/output/fitness_evolved_g{:02d}.npy'.format(g),
         fitness_evolved)
-    np.save(
-        workingdir + '/output/best_inds_g{:2d}.npy'.format(g),
-        fitness_evolved)
-    g += 1
 
-# print(fitness_evolved)
-# for i in np.argsort(fits):
-#     print(population[i], population[i].fitness.values)
+    sorted_inds = np.arange(0, 20)[np.argsort(fits)]
+    # save evolved better individuals
+    better_inds_evolved[g, :] = sorted_inds[:5]
+    np.save(
+        workingdir + '/output/inds_evolved_g{:02d}.npy'.format(g),
+        better_inds_evolved)
+
+    # delete .gdf files to save space
+    worse_inds = sorted_inds[5:]
+    for i in worse_inds:
+        data_dir = os.getcwd() + '/output/g={0:02d}_ind={1:02d}/'.format(g, i) + 'data/'
+        for item in os.listdir(data_dir):
+            if item.endswith('.gdf'):
+                os.remove(data_dir + item)
+
+    g += 1
 
 plt.figure()
 plt.plot(np.arange(g), fitness_evolved[:g, :], 'b.')

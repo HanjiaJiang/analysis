@@ -39,10 +39,10 @@ def interaction_barplot(arr, y_bottom, y_top, labels=None, ylabel=None):
     x = np.arange(arr_len)
     barwidth = 0.75/arr_len
     fig, ax = plt.subplots(figsize=(12, 12))
-    for i in range(4):
+    for i in range(len(arr)):
         ax.bar(x + barwidth * i, arr[i, :], barwidth, label=labels[i])
     ax.legend(bbox_to_anchor=(0., 1.2, 1.0, 0.1),
-              ncol=2, mode="expand", borderaxespad=0.)
+              ncol=int(len(labels)/2), mode="expand", borderaxespad=0.)
     ax.set_xticks(x)
     ax.set_xticklabels(labels)
     ax.set_ylabel(ylabel)

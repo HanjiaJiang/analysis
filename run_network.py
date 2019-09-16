@@ -9,15 +9,17 @@ import network
 from network_params import net_dict
 from sim_params import sim_dict
 from stimulus_params import stim_dict
+from scan_params import *
 import microcircuit_tools as tools
+import multiprocessing as mp
 
 run_sim = True
 run_calc = True
-stim_ts = np.arange(2000.0, 12000.0, 1000.0)
-stim_len = 1000.0
+stim_times = np.arange(2000.0, 12000.0, 1000.0)
+stim_length = 1000.0
 bin_width = 125.0
 
-def network_corr(path, name, stim_ts, stim_len, bin_width):
+def network_corr(path, name, stim_ts, stim_len, bin_wid):
     print('start data processing...')
     begin = stim_ts[0]
     end = stim_ts[-1] + stim_len
@@ -55,7 +57,7 @@ def network_corr(path, name, stim_ts, stim_len, bin_width):
                         # make histogram
                         hist, bin_edges = np.histogram(
                             times,
-                            int((end - begin) / bin_width),  # nr. of bins
+                            int((end - begin) / bin_wid),  # nr. of bins
                             (begin, end))  # window of analysis
                         hists.append(hist)
                     hists_all_stim.append(hists)
@@ -92,6 +94,19 @@ def network_corr(path, name, stim_ts, stim_len, bin_width):
 
 
 net_dict['conn_probs'] = np.load('conn_probs.npy')
+if on_server:
+    cpu_ratio = 1
+else:
+    cpu_ratio = 0.5
+sim_dict['local_num_threads'] = int(mp.cpu_count()*cpu_ratio)
+sim_dict['t_sim'] = 12000.0
+net_dict['K_ext'] = np.array([2000, PV_ext_scan, SOM_ext_scan, VIP_ext_scan,
+                              2000, PV_ext_scan, SOM_ext_scan,
+                              2000, PV_ext_scan, SOM_ext_scan,
+                              2000, PV_ext_scan, SOM_ext_scan])
+net_dict['g'] = g_scan
+net_dict['bg_rate'] = bg_scan
+stim_dict['thalamic_input'] = False
 
 if run_sim:
     net = network.Network(sim_dict, net_dict, stim_dict)
@@ -104,7 +119,7 @@ if run_sim:
 
 if run_calc:
     tmp_arr = network_corr(
-        sim_dict['data_path'], 'spike_detector', stim_ts, stim_len, bin_width)
+        sim_dict['data_path'], 'spike_detector', stim_times, stim_length, bin_width)
     np.save('coef_arr.npy', tmp_arr)
     tools.fire_rate(sim_dict['data_path'], 'spike_detector', 2000.0, 12000.0)
     tools.boxplot(net_dict, sim_dict['data_path'])
