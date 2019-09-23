@@ -6,20 +6,25 @@ import microcircuit_tools as tools
 labels = ['E', 'PV', 'SOM', 'VIP']
 
 def evaluate(result, target):
-    fitness = 0
     t_arr = target.flatten()
     r_arr = result.flatten()
-    # desert repeated elements; to be improved
+    # take out repeated elements; to be improved
     t_arr = np.concatenate((
-        t_arr[0:4], t_arr[5:8], t_arr[10:12], t_arr[15:16]))
+        t_arr[0:1], t_arr[4:6], t_arr[8:11], t_arr[12:16]))
     r_arr = np.concatenate((
-        r_arr[0:4], r_arr[5:8], r_arr[10:12], r_arr[15:16]))
+        r_arr[0:1], r_arr[4:6], r_arr[8:11], r_arr[12:16]))
+    sum = 0.0
+    cnt = 0
+    fitness = 10.0
     for t, r in zip(t_arr, r_arr):
         if np.isnan(t) or np.isnan(r):
-            fitness = 10.0
+            cnt = 0 # as an error flag here
             break
         dif = (t - r) ** 2
-        fitness += dif
+        sum += dif
+        cnt += 1
+    if cnt != 0:
+        fitness = np.sqrt(sum/cnt)
     return (fitness,)
 
 # pre-learning

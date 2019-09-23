@@ -1,9 +1,6 @@
 '''
 Genetic algorithm for connectivity map
 by Hanjia
-
-Idea taken from:
-https://www.electricmonk.nl/log/2011/09/28/evolutionary-algorithm-evolving-hello-world/
 '''
 
 import os
@@ -15,11 +12,12 @@ import time
 from batch_genetic import batch_genetic
 
 on_server = True
+
 N_ind = 20      # number of individuals in a population
-p_cx = 0.8      # probability of cross-over
-p_mut = 0.2     # probability of mutation
-max_generations = 40
-mut_degrees = [0.3, 0.0]    # s.d. of mutation range (unit: times of mean)
+p_cx = 0.8      # cross-over probability
+p_mut = 0.2     # mutation probability
+max_generations = 200
+mut_degrees = [0.3, 0.05]    # s.d. of mutation range (unit: times of mean)
 
 origin_map = np.array([
     [0.0872, 0.3173, 0.4612, 0.0448, 0.1056, 0.4011, 0.0374, 0.0234, 0.09,
@@ -69,22 +67,27 @@ def create_individual():
 #                                        np.random.randn(13, 13))
 #     return new_map
 
-
+# RMSE as fitness
 def evaluate(result, target):
-    fitness = 0
     t_arr = target.flatten()
     r_arr = result.flatten()
-    # desert repeated elements; to be improved
+    # take out repeated elements; to be improved
     t_arr = np.concatenate((
-        t_arr[0:4], t_arr[5:8], t_arr[10:12], t_arr[15:16]))
+        t_arr[0:1], t_arr[4:6], t_arr[8:11], t_arr[12:16]))
     r_arr = np.concatenate((
-        r_arr[0:4], r_arr[5:8], r_arr[10:12], r_arr[15:16]))
+        r_arr[0:1], r_arr[4:6], r_arr[8:11], r_arr[12:16]))
+    sum = 0.0
+    cnt = 0
+    fitness = 10.0
     for t, r in zip(t_arr, r_arr):
         if np.isnan(t) or np.isnan(r):
-            fitness = 10.0
+            cnt = 0 # as an error flag here
             break
         dif = (t - r) ** 2
-        fitness += dif
+        sum += dif
+        cnt += 1
+    if cnt != 0:
+        fitness = np.sqrt(sum/cnt)
     return (fitness,)
 
 
@@ -101,29 +104,34 @@ def cxOnePointStr(ind1, ind2):
 
 
 def mutSNP1(ind, p):
-    '''
-    A bit more sophisticated version: mutation only shifts a character by +/-1.
-    '''
+    l23 = np.arange(0, 4)
+    l4 = np.arange(4, 7)
+    l5 = np.arange(7, 10)
+    l6 = np.arange(10, 13)
     assert (0 <= p <= 1)
     new = ind
     for i, row in enumerate(new):
         for j, item in enumerate(row):
             if np.random.random() <= p:
-                if i < 4 and j < 4:  # L2/3
-                    mut_sd = mut_degrees[0]
-                else:  # other layers
-                    mut_sd = mut_degrees[1]
-                new[i][j] = item + mut_sd * item * (np.random.randn())
+                if j in l23:    # only when target is L2/3
+                    if i in l23:
+                        mut_sd = mut_degrees[0]
+                    else:
+                        mut_sd = mut_degrees[1]
+                    new_item = item + mut_sd * item * (np.random.randn())
+                    if new_item > 0.0:
+                        new[i][j] = new_item
     return type(ind)(new)
 
 
 def do_and_check(survivors, g):
     if on_server:
-        # divide into groups of 5
-        for i in range(int(len(survivors) / 5)):
+        # divide into groups of 10
+        round_num = 10
+        for i in range(int(len(survivors) / round_num)):
             # do the simulations
-            map_ids = np.arange(i * 5, (i + 1) * 5)
-            batch_genetic(survivors[i * 5:(i + 1) * 5], g, map_ids)
+            map_ids = np.arange(i * round_num, (i + 1) * round_num)
+            batch_genetic(survivors[i * round_num:(i + 1) * round_num], g, map_ids)
             fin_flag = False  # finish flag
             t0 = time.time()
             # check results
@@ -172,11 +180,10 @@ population = box.pop(n=N_ind)
 g = 0
 fits = [10 for i in population]
 fitness_evolved = np.zeros((max_generations, 5))
-better_inds_evolved = np.zeros((max_generations, 5))
-# Target: fitness of pre- vs. post-learning exp. data is 0.036
-# which means average difference for individual connection is 0.06
-# so evolved fitness should be at least smaller than this level
-while min(fits) > 0.025 and g < max_generations:
+best5_inds_evolved = np.zeros((max_generations, 5))
+# Target: fitness (RMSE) of pre- vs. post-learning exp. data ~= 0.06
+# evolved fitness should be at least smaller than this level
+while min(fits) > 0.005 and g < max_generations:
     ## SELECTION
     survivors = box.select(population, len(population))
 
@@ -221,16 +228,14 @@ while min(fits) > 0.025 and g < max_generations:
         workingdir + '/output/fitness_evolved_g{:02d}.npy'.format(g),
         fitness_evolved)
 
-    sorted_inds = np.arange(0, 20)[np.argsort(fits)]
     # save evolved better individuals
-    better_inds_evolved[g, :] = sorted_inds[:5]
+    best5_inds_evolved[g, :] = np.arange(0, 20)[np.argsort(fits)[:5]]
     np.save(
         workingdir + '/output/inds_evolved_g{:02d}.npy'.format(g),
-        better_inds_evolved)
+        best5_inds_evolved)
 
     # delete .gdf files to save space
-    worse_inds = sorted_inds[5:]
-    for i in worse_inds:
+    for i in range(20):
         data_dir = os.getcwd() + '/output/g={0:02d}_ind={1:02d}/'.format(g, i) + 'data/'
         for item in os.listdir(data_dir):
             if item.endswith('.gdf'):
@@ -239,10 +244,12 @@ while min(fits) > 0.025 and g < max_generations:
     g += 1
 
 plt.figure()
-plt.plot(np.arange(g), fitness_evolved[:g, :], 'b.')
-plt.hlines(0, 0, g + 10, 'k', linestyles='--')
+plt.plot(np.arange(g), np.sqrt(fitness_evolved[:g, :]/10), 'b.')
+plt.hlines(0.06, 0, g + 10, 'k', linestyles='--', label='pre vs. post RMSE')
+plt.hlines(0, 0, g + 10, 'w', linestyles='--')
+plt.legend()
 plt.xlabel('Number of generations')
-plt.ylabel('Fitness to minimize')
+plt.ylabel('Fitness (RMSE)')
 plt.title("Evolution of 5 best individuals' fitness")
 plt.tight_layout()
 plt.savefig(workingdir + '/output/genetic_hj.png')
