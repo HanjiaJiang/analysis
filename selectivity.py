@@ -26,7 +26,7 @@ subtype_label = ['E', 'PV+', 'SOM+', 'VIP+']
 cwd = os.getcwd()
 plot_length = 80.0
 y_boundary = [-1.25, 1.25]
-stimulus = 10
+stimulus = 30
 
 def count_spikes(path, name, begin, end, t_stim_list, len_window):
     # t_stim_list: list of stimulation time points
@@ -77,8 +77,8 @@ def count_spikes(path, name, begin, end, t_stim_list, len_window):
     return counts_all
 
 # hs = horizontal stimulus; vs = vertical stimulus
-path_hs = tools.folders_contain_str('o=0')[0] + '/data/'
-path_vs = tools.folders_contain_str('o=1')[0] + '/data/'
+path_hs = tools.folders_with_str('o=0')[0] + '/data/'
+path_vs = tools.folders_with_str('o=1')[0] + '/data/'
 
 t_begin = 2000.0            # begin of stimulation
 t_end = t_begin + 20000.0   # end of stimulation

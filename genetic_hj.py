@@ -19,37 +19,6 @@ p_mut = 0.2     # mutation probability
 max_generations = 200
 mut_degrees = [0.3, 0.05]    # s.d. of mutation range (unit: times of mean)
 
-origin_map = np.array([
-    [0.0872, 0.3173, 0.4612, 0.0448, 0.1056, 0.4011, 0.0374, 0.0234, 0.09,
-     0.1864, 0., 0., 0.],
-    [0.3763, 0.3453, 0.2142, 0.0683, 0.0802, 0.012, 0.0257, 0.0257, 0.1937,
-     0.2237, 0.0001, 0.0001, 0.0062],
-    [0.2288, 0.1342, 0.1242, 0.2618, 0.0033, 0.0097, 0.0363, 0.0003, 0.0222,
-     0.018, 0., 0., 0.],
-    [0.0224, 0.0516, 0.0567, 0.0274, 0.0021, 0.0086, 0.0142, 0.0002, 0.0008,
-     0.0051, 0., 0.0001, 0.0048],
-
-    [0.0128, 0.0668, 0.049, 0.0584, 0.1764, 0.4577, 0.2761, 0.0059, 0.0232,
-     0.0427, 0., 0.0017, 0.0212],
-    [0.0317, 0.0121, 0.0198, 0.0428, 0.0937, 0.3487, 0.4068, 0.0072, 0.0231,
-     0.0369, 0.0009, 0.002, 0.0157],
-    [0.033, 0.0144, 0.0198, 0.2618, 0.2906, 0.4432, 0.0386, 0.0087, 0.0257,
-     0.0384, 0.001, 0.0018, 0.0198],
-
-    [0.0841, 0.0528, 0.072, 0.0539, 0.0844, 0.0546, 0.0621, 0.0957, 0.1871,
-     0.1575, 0.0094, 0.0139, 0.0418],
-    [0.0705, 0.1211, 0.0444, 0.0165, 0.0315, 0.0225, 0.0183, 0.0846, 0.3574,
-     0.2594, 0.0029, 0.0102, 0.0212],
-    [0.0998, 0.0072, 0.0089, 0.2618, 0.0343, 0.0225, 0.0209, 0.0587, 0.1182,
-     0.0427, 0.0038, 0.0124, 0.0262],
-
-    [0., 0.0018, 0.0028, 0.0068, 0.0297, 0.0125, 0.0084, 0.0381, 0.017, 0.0128,
-     0.021, 0.3249, 0.3014],
-    [0.0025, 0.0001, 0.0003, 0.002, 0.0045, 0.0016, 0.0004, 0.0149, 0., 0.0031,
-     0.1865, 0.3535, 0.2968],
-    [0.0021, 0., 0.0002, 0.2618, 0.0004, 0.0014, 0.0003, 0.0141, 0., 0.0019,
-     0.1062, 0.3321, 0.0379]])
-
 target_corr = np.array([[0.123, 0.145, 0.112, 0.113],
                         [0.145, 0.197, 0.163, 0.193],
                         [0.112, 0.163, 0.211, 0.058],
@@ -57,15 +26,10 @@ target_corr = np.array([[0.123, 0.145, 0.112, 0.113],
 
 workingdir = os.getcwd()
 
+origin_probs = np.load('conn_probs.npy')
 
 def create_individual():
-    return origin_map
-
-
-# def create_individual():
-#     new_map = origin_map + np.multiply(0.1 * origin_map,
-#                                        np.random.randn(13, 13))
-#     return new_map
+    return origin_probs
 
 # RMSE as fitness
 def evaluate(result, target):
@@ -113,14 +77,21 @@ def mutSNP1(ind, p):
     for i, row in enumerate(new):
         for j, item in enumerate(row):
             if np.random.random() <= p:
-                if j in l23:    # only when target is L2/3
-                    if i in l23:
+                if i in l23:    # only when target is in L2/3
+                    if j in l23:
                         mut_sd = mut_degrees[0]
                     else:
                         mut_sd = mut_degrees[1]
                     new_item = item + mut_sd * item * (np.random.randn())
-                    if new_item > 0.0:
-                        new[i][j] = new_item
+
+                    # boundaries
+                    origin = origin_probs[i, j]
+                    if new_item > origin*1.5:
+                        new_item = origin*1.5
+                    elif new_item < origin*0.5:
+                        new_item = origin*0.5
+
+                    new[i][j] = new_item
     return type(ind)(new)
 
 
