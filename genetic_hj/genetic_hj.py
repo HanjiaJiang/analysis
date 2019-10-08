@@ -18,6 +18,8 @@ p_cx = 0.8      # cross-over probability
 p_mut = 0.2     # mutation probability
 max_generations = 200
 mut_degrees = [0.3, 0.05]    # s.d. of mutation range (unit: times of mean)
+set_mut_bound = False
+mut_bound = [0.5, 1.5]
 
 target_corr = np.array([[0.123, 0.145, 0.112, 0.113],
                         [0.145, 0.197, 0.163, 0.193],
@@ -69,29 +71,36 @@ def cxOnePointStr(ind1, ind2):
 
 def mutSNP1(ind, p):
     l23 = np.arange(0, 4)
-    l4 = np.arange(4, 7)
-    l5 = np.arange(7, 10)
-    l6 = np.arange(10, 13)
+    # l4 = np.arange(4, 7)
+    # l5 = np.arange(7, 10)
+    # l6 = np.arange(10, 13)
     assert (0 <= p <= 1)
     new = ind
     for i, row in enumerate(new):
-        for j, item in enumerate(row):
+        for j, conn in enumerate(row):
             if np.random.random() <= p:
                 if i in l23:    # only when target is in L2/3
                     if j in l23:
                         mut_sd = mut_degrees[0]
                     else:
                         mut_sd = mut_degrees[1]
-                    new_item = item + mut_sd * item * (np.random.randn())
 
-                    # boundaries
+                    # mutation
                     origin = origin_probs[i, j]
-                    if new_item > origin*1.5:
-                        new_item = origin*1.5
-                    elif new_item < origin*0.5:
-                        new_item = origin*0.5
-
-                    new[i][j] = new_item
+                    new_conn = conn
+                    if set_mut_bound is True:
+                        for k in range(1000):
+                            tmp = conn + mut_sd * conn * (np.random.randn())
+                            if origin*mut_bound[0] < new_conn < origin*mut_bound[1]:
+                                new_conn = tmp
+                                break
+                            # if tried too many times,
+                            # give up and maintain the previous value
+                            if k == 999:
+                                break
+                    else:
+                        new_conn = conn + mut_sd * conn * (np.random.randn())
+                    new[i][j] = new_conn
     return type(ind)(new)
 
 
