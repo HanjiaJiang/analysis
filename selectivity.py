@@ -6,7 +6,9 @@ from datetime import datetime
 from scipy import stats
 from time import time
 import matplotlib
+import warnings
 matplotlib.rcParams['font.size'] = 30.0
+warnings.filterwarnings("ignore")
 
 populations = \
     ['L2/3 E', 'L2/3 PV', 'L2/3 SOM', 'L2/3 VIP',
@@ -25,8 +27,8 @@ subtype_label = ['E', 'PV+', 'SOM+', 'VIP+']
 
 cwd = os.getcwd()
 plot_length = 80.0
-y_boundary = [-1.25, 1.25]
-stimulus = 30
+y_boundary = [-0.5, 3.5]
+stimulus = int(input('stimulus='))
 
 def count_spikes(path, name, begin, end, t_stim_list, len_window):
     # t_stim_list: list of stimulation time points
@@ -37,9 +39,9 @@ def count_spikes(path, name, begin, end, t_stim_list, len_window):
     t_f1 = time()
     for i in list(range(len(data_all))):
         # data = data_all[i]
-        data_ids = data_all[i][:, 0]
-        data_times = data_all[i][:, 1]
-        if len(data_ids) > 0:
+        if len(data_all[i]) > 0:
+            data_ids = data_all[i][:, 0]
+            data_times = data_all[i][:, 1]
             counts_pop = [] # window x trial x id
             for t_shift in np.arange(0.0, t_stim_list[1] - t_stim_list[0],
                                      len_window):
@@ -98,7 +100,7 @@ std_si_vg = np.zeros((13, n_window))
 se_si_hg = np.zeros((13, n_window)) # standard error
 se_si_vg = np.zeros((13, n_window))
 p_value_si = np.zeros((13, n_window))
-significance_si = np.zeros((13, n_window))
+significance_si = np.full((13, n_window), -100.0)
 
 # counts: [population][window][trial][neuron id]
 t0 = time()
@@ -139,7 +141,7 @@ for i in range(13):
             idx_vc = np.concatenate((np.arange(0, idx1), np.arange(idx3, idx4)))
             mean_hs = np.mean(cnt_hs, axis=0)   # mean across trials
             mean_vs = np.mean(cnt_vs, axis=0)   # mean across trials
-            std_cnt = np.std(np.concatenate((cnt_hs, cnt_vs), axis=0), axis=0) # pooled std
+            std_cnt = np.sqrt((np.var(cnt_hs, axis=0)+np.var(cnt_vs, axis=0))/2) # pooled std
             if i == 0 and j == 0:
                 print('population {} cell number = {}'.format(i, len(mean_hs)))
 
@@ -201,10 +203,8 @@ for i in range(13):
             se_si_vg[i, j] = np.std(si_vc)/np.sqrt(len(si_vc))
             t_value, p_value = stats.ttest_ind(si_hc, si_vc)
             p_value_si[i, j] = p_value
-            sig = -100.0
             if t_value > 0 and p_value <= 0.05:
-                sig = 1.0
-            significance_si[i, j] = sig
+                significance_si[i, j] = 1.0
             # si_abs_arr[j, i] = np.mean(si_abs)
 
             t03 = time()
@@ -231,12 +231,17 @@ for i, pop in enumerate(populations):
         b = (i-1) % 3.0
 
     # horizontal and vertical cells plot
-    axs[a].plot(t_plot, mean_si_hg[i, :],
-                    color=colors[i],
-                    label='{} \'horizontal\' cells'.format(subtype_label[int(b)]), linewidth=4)
-    axs[a].plot(t_plot, mean_si_vg[i, :],
-                    color=colors[i],
-                    label='{} \'vertical\' cells'.format(subtype_label[int(b)]), linewidth=4, ls='--')
+    data_plot = mean_si_hg[i, :] - mean_si_vg[i, :]
+    axs[a].plot(t_plot, data_plot,
+                color=colors[i],
+                label='{} \'horizontal\' cells'.format(subtype_label[int(b)]),
+                linewidth=4)
+    # axs[a].plot(t_plot, mean_si_hg[i, :],
+    #                 color=colors[i],
+    #                 label='{} \'horizontal\' cells'.format(subtype_label[int(b)]), linewidth=4)
+    # axs[a].plot(t_plot, mean_si_vg[i, :],
+    #                 color=colors[i],
+    #                 label='{} \'vertical\' cells'.format(subtype_label[int(b)]), linewidth=4, ls='--')
     # axs[a].errorbar(t_plot, mean_si_hg[i, :],
     #                 yerr=se_si_hg[i, :], color=colors[i],
     #                 label='{} \'horizontal\' cells'.format(
@@ -248,8 +253,10 @@ for i, pop in enumerate(populations):
     sig_list = significance_si[i, :]
 
     # marker of significance
-    axs[a].plot(t_plot, mean_si_hg[i, :] + sig_list*0.15,
+    axs[a].plot(t_plot, data_plot + sig_list * 0.15,
                 color=colors[i], marker='*', ls='None', markersize=10)
+    # axs[a].plot(t_plot, mean_si_hg[i, :] + sig_list*0.15,
+    #             color=colors[i], marker='*', ls='None', markersize=10)
     # p-value
     # for x, t in enumerate(t_plot):
     #     axs[a].text(t, -0.80 - 0.1*b, '{:.3f}'.format(p_value_si[i, x]), fontsize=10)
