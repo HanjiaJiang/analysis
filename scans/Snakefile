@@ -1,0 +1,28 @@
+CONN_COUNT = 2
+STP_COUNT = 3
+SOM_COUNT = 2
+VIP_COUNT = 2
+
+localrules: all
+
+rule all:
+    input:
+        'finish.npy'
+#         expand('async_conn{a}_stp{b}.png', a=range(CONN_COUNT), b=range(STP_COUNT)),
+#         expand('irreg_conn{a}_stp{b}.png', a=range(CONN_COUNT), b=range(STP_COUNT)),
+#         expand('fr_conn{a}_stp{b}.png', a=range(CONN_COUNT), b=range(STP_COUNT))
+
+rule analysis:
+    input:
+        ai = expand('data/{a}_{b}_{c}_{d}/ai.dat', a=range(CONN_COUNT), b=range(STP_COUNT), c=range(SOM_COUNT), d=range(VIP_COUNT))
+    output:
+        'finish.npy'
+#         expand('async_conn{a}_stp{b}.png', a=range(CONN_COUNT), b=range(STP_COUNT)),
+#         expand('irreg_conn{a}_stp{b}.png', a=range(CONN_COUNT), b=range(STP_COUNT)),
+#         expand('fr_conn{a}_stp{b}.png', a=range(CONN_COUNT), b=range(STP_COUNT))
+    shell:
+        '''
+        python analysis.py {input.ai} {output}
+        '''
+
+
