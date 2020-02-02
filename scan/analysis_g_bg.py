@@ -23,19 +23,36 @@ def read_data(name):
     return r_arr
 
 
-def colormap(name, data, lvls1, lvls2, low, high):
-    X, Y = np.meshgrid(lvls1, lvls2)
+def colormap(name, data, xs, ys, low, high):
+    rotate_format = '%.1e'
+    X, Y = np.meshgrid(xs, ys)
     fig, axs = plt.subplots(4, 1, figsize=(6, 14), sharex=True, sharey=True, constrained_layout=True)
     axs = axs.ravel()
+    axs[-1].set_xlabel('g\n')
+    axs[-1].set_ylabel('bg_rate (spikes/s)', rotation=90)
     plot_name = '{}.png'.format(name)
+    goodness_range = high - low
+    vmax=high+goodness_range*2
+    vmin=low-goodness_range*2
     for k, data_layer in enumerate(data):
-        cs = axs[k].contourf(X, Y, data_layer.T)
-        #cs.cmap.set_over("orange")
-        #cs.cmap.set_under("black")
+        Z = data_layer.T
+        extent = [np.min(xs), np.max(xs), np.min(ys), np.max(ys)]
+        cs = axs[k].imshow(Z, interpolation='gaussian', cmap='seismic_r',
+               origin='lower', extent=extent,
+               vmax=vmax, vmin=vmin)
+        # cs = axs[k].contourf(X, Y, data_layer.T,
+        # levels=np.linspace(low-goodness_range*2, high+goodness_range*2, 11),
+        # cmap='seismic_r',
+        # extend='both')
+        cs_line = axs[k].contour(Z, levels=[low, high], colors=['m', 'magenta'], extent=extent, linewidths=4)
+        # cs_line = axs[k].contour(cs, levels=[low, high], colors=['r', 'magenta'], linewidths=4)
+        cs.cmap.set_over("navy")
+        cs.cmap.set_under("firebrick")
+        axs[k].text(xs[0] - 0.5*(xs[-1] - xs[0]), ys[0] + 0.5*(ys[-1] - ys[0]), layers[k])
         if k == 3:
             cbar = fig.colorbar(cs, orientation='horizontal')
-            xticklabels = cbar.ax.get_xticklabels()
-            cbar.ax.set_xticklabels(xticklabels, rotation=30, fontsize=18)
+            cbar.add_lines(cs_line)
+
 
     fig.savefig(plot_name)
     plt.close()
@@ -74,7 +91,7 @@ if __name__ == "__main__":
           #      data_fr[i, params[0], params[1]] = float(layer[0])
 
     colormap('pair-corr', data_a, lvl_g, lvl_bg, -0.008, 0.008)
-    colormap('irreg', data_i, lvl_g, lvl_bg, 0.5, 1.0)
+    colormap('cv-isi', data_i, lvl_g, lvl_bg, 0.76, 1.2)
     #colormap('fr', data_fr, lvl_g, lvl_bg, 0.0, 10.0)
 
     # np.save(output, [])
