@@ -8,17 +8,17 @@ localrules: all
 
 rule all:
     input:
-        'finish.npy'
+        'fr.png'
 
 rule analysis:
     input:
         ai = expand('scans/{a}_{b}_{c}/', a=range(STP_COUNT), b=range(G_START, G_START + G_COUNT), c=range(BG_START, BG_START + BG_COUNT))
     output:
-        'finish.npy'
+        'fr.png'
 
     shell:
         '''
-        python analysis_g_bg.py {input.ai} {output}
+        python analysis_ground_state.py {input.ai} {output}
         '''
 
 
