@@ -68,18 +68,18 @@ def colormap(name, data, xs, ys, low_1, high_1, low_2=None, high_2=None, fit_mtx
                            extent=extent, vmax=vmax, vmin=vmin)
 
         # contour of the main criteria
-        cs_line = axs[k].contour(Z, levels=[low_1, high_1], colors=['m', 'magenta'],
-                                 extent=extent, linewidths=2)
+        cs_line = axs[k].contour(Z, levels=[low_1, high_1], colors=['magenta', 'cyan'],
+                                 extent=extent, linewidths=3, linestyles='dashed')
 
         # contour of the extra criteria
         if flg_extra_line:
-            axs[k].contour(Z, levels=[low_2[k], high_2[k]], colors=['m', 'magenta'],
-                           extent=extent, linewidths=3, linestyles='dashed')
+            axs[k].contour(Z, levels=[low_2[k], high_2[k]], colors=['magenta', 'cyan'],
+                           extent=extent, linewidths=5, linestyles='dashed')
 
         # scatter plot for 'all fit' data points
         if type(fit_mtx) == np.ndarray:
             idx1, idx2 = np.where(fit_mtx[k] == 1)
-            axs[k].scatter(xs[idx1], ys[idx2], color='green')
+            axs[k].scatter(xs[idx1], ys[idx2], s=150, marker='*', color='limegreen', zorder=10, edgecolor='green')
 
         # set off-limit colors
         cs.cmap.set_over("black")
@@ -175,4 +175,3 @@ if __name__ == "__main__":
     colormap('fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1], low_2=exc_fr_low, high_2=exc_fr_high, fit_mtx=fitness_mtx)
     colormap('fr-pv', data_fr_pv, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1])
     colormap('fr-som', data_fr_som, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1])
-

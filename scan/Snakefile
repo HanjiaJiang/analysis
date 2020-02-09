@@ -1,4 +1,5 @@
-STP_COUNT = 1
+TEST_START = 0
+TEST_COUNT = 1
 G_START = 4
 G_COUNT = 5
 BG_START = 2
@@ -12,7 +13,7 @@ rule all:
 
 rule analysis:
     input:
-        ai = expand('scans/{a}_{b}_{c}/', a=range(STP_COUNT), b=range(G_START, G_START + G_COUNT), c=range(BG_START, BG_START + BG_COUNT))
+        ai = expand('scans/{a}_{b}_{c}/', a=range(TEST_START, TEST_START + TEST_COUNT), b=range(G_START, G_START + G_COUNT), c=range(BG_START, BG_START + BG_COUNT))
     output:
         'fr.png'
 
@@ -20,5 +21,3 @@ rule analysis:
         '''
         python analysis_ground_state.py {input.ai} {output}
         '''
-
-
