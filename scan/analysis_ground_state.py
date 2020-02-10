@@ -54,7 +54,7 @@ def colormap(name, data, xs, ys, low_1, high_1, low_2=None, high_2=None, fit_mtx
     # x and y labels (to be improved)
     axs[-1].set_xlabel('g\n')
     # axs[-1].set_ylabel('bg_rate (spikes/s)', rotation=90, color='w')
-    fig.text(0.15, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
+    fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
 
     for k, data_layer in enumerate(data):
         # data transposed so that g is x axis and bg_rage is y axis
