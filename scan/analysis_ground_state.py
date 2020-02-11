@@ -69,7 +69,7 @@ def colormap(name, data, xs, ys, low_1, high_1, low_2=None, high_2=None, fit_mtx
 
         # contour of the main criteria
         cs_line = axs[k].contour(Z, levels=[low_1, high_1], colors=['magenta', 'cyan'],
-                                 extent=extent, linewidths=3, linestyles='dashed')
+                                 extent=extent, linewidths=3)
 
         # contour of the extra criteria
         if flg_extra_line:
