@@ -8,7 +8,7 @@ matplotlib.rcParams['font.size'] = 20.0
 layers = ['L2/3', 'L4', 'L5', 'L6']
 
 # criteria from Maksimov et al., 2018
-criteria_fr = [0.18, 10.0]
+criteria_fr = [0.0, 10.0]
 criteria_corr = [0.0001, 0.008]
 criteria_cv = [0.76, 1.2]
 
