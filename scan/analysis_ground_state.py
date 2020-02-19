@@ -108,6 +108,7 @@ def colormap(name, data, xs, ys, low, high,
             cbar.add_lines(cs_line)
             # if flg_extra_line:
             #     cbar.add_lines(cs_line_extra) # will override cs_line; to be solved
+    fig.suptitle(name)
     fig.savefig(plot_name)
     plt.close()
 
