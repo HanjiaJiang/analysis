@@ -88,7 +88,7 @@ def colormap(name, data, xs, ys, low, high,
             # axs[k].scatter(xs[idx1], ys[idx2], s=150, marker='*', color='yellow', zorder=10, edgecolor='black')
             xlist = xs[idx1]
             ylist = ys[idx2]
-            if all(x==xlist[0] for x in xlist) or all(y==ylist[0] for y in ylist):
+            if len(xlist) <= 3 or all(x==xlist[0] for x in xlist) or all(y==ylist[0] for y in ylist):
                 axs[k].plot(xlist, ylist, 'r', zorder=10)
             else:
                 triang = tri.Triangulation(xlist, ylist)
