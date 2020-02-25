@@ -4,6 +4,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.tri as tri
+import interpol
+from matplotlib.patches import Polygon
 matplotlib.rcParams['font.size'] = 20.0
 
 layers = ['L2/3', 'L4', 'L5', 'L6']
@@ -63,36 +65,40 @@ def colormap(name, data, xs, ys, low, high,
     fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
 
     for k, data_layer in enumerate(data):
-        # data transposed so that g is x axis and bg_rage is y axis
+        # data transposed so that row lies in x and column lies in y
         Z = data_layer.T
 
-        # define x and y border of the plot
+        # define plot borders
         extent = [np.min(xs), np.max(xs), np.min(ys), np.max(ys)]
 
-        # origin='lower': origin of the plot at lower-left corner
+        # colormap plots
         cs = axs[k].imshow(Z, interpolation='gaussian', cmap=cmap, origin='lower',
                            extent=extent, vmax=vmax, vmin=vmin)
 
-        # contour of the main criteria
+        # contour main criteria
         cs_line = axs[k].contour(Z, levels=[low, high], colors=[criteria_color, criteria_color],
                                  extent=extent, linewidths=2)
 
-        # contour of the extra criteria
+        # contour extra criteria
         if flg_extra_line:
             axs[k].contour(Z, levels=[low_extra[k], high_extra[k]], colors=[criteria_color, criteria_color],
                            extent=extent, linewidths=4, linestyles='dashed')
 
-        # scatter plot for 'all fit' data points
+        # shaded patch for 'all fit' data
         if type(fit_mtx) == np.ndarray:
             idx1, idx2 = np.where(fit_mtx[k] == 1)
-            # axs[k].scatter(xs[idx1], ys[idx2], s=150, marker='*', color='yellow', zorder=10, edgecolor='black')
             xlist = xs[idx1]
             ylist = ys[idx2]
-            if len(xlist) <= 3 or all(x==xlist[0] for x in xlist) or all(y==ylist[0] for y in ylist):
-                axs[k].plot(xlist, ylist, 'r', zorder=10)
-            else:
-                triang = tri.Triangulation(xlist, ylist)
-                axs[k].triplot(triang, 'r-', zorder=10)
+            axs[k].scatter(xlist, ylist, s=50, color='r', zorder=10)
+            if len(xlist) > 2:
+                xi, yi = interpol.sort_by_angle(xlist.tolist(), ylist.tolist())
+                xi, yi = interpol.interpol_spline(xi, yi)
+                axs[k].add_patch(Polygon(np.array([xi, yi]).T, closed=True, fill=False, hatch='x', color='r', zorder=10))
+            # if len(xlist) <= 3 or all(x==xlist[0] for x in xlist) or all(y==ylist[0] for y in ylist):
+            #     axs[k].plot(xlist, ylist, 'r', zorder=10)
+            # else:
+            #     triang = tri.Triangulation(xlist, ylist)
+            #     axs[k].triplot(triang, 'r-', zorder=10)
                 # axs[k].tripcolor(xlist, ylist, np.zeros(len(xlist)))
 
         # set off-limit colors
@@ -183,6 +189,7 @@ if __name__ == "__main__":
 
     # check fitness
     fitness_mtx = check_fitness(data_fr_exc, data_a, data_i, criteria_fr, criteria_corr, criteria_cv)
+    # print(fitness_mtx)
 
     # plotting
     colormap('pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1], v_range=(-0.02, 0.02), fit_mtx=fitness_mtx)
