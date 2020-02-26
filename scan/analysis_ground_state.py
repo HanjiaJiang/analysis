@@ -174,18 +174,18 @@ if __name__ == "__main__":
         if len(ai) == 4:
             for i, ai_lyr in enumerate(ai):
                 print('ai', params, ai_lyr[0], ai_lyr[1])
-                data_a[i, lvls_g.tolist().index(params[1]), lvls_bg.tolist().index(params[2])] = float(ai_lyr[0])
-                data_i[i, lvls_g.tolist().index(params[1]), lvls_bg.tolist().index(params[2])] = float(ai_lyr[1])
+                data_a[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(ai_lyr[0])
+                data_i[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(ai_lyr[1])
         if len(fr) == 13:
             for i, fr_lyr in enumerate(np.array(fr)[[0, 4, 7, 10]]):
                 print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_exc[i, lvls_g.tolist().index(params[1]), lvls_bg.tolist().index(params[2])] = float(fr_lyr[0])
+                data_fr_exc[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(fr_lyr[0])
             for i, fr_lyr in enumerate(np.array(fr)[[1, 5, 8, 11]]):
                 print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_pv[i, lvls_g.tolist().index(params[1]), lvls_bg.tolist().index(params[2])] = float(fr_lyr[0])
+                data_fr_pv[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(fr_lyr[0])
             for i, fr_lyr in enumerate(np.array(fr)[[2, 6, 9, 12]]):
                 print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_som[i, lvls_g.tolist().index(params[1]), lvls_bg.tolist().index(params[2])] = float(fr_lyr[0])
+                data_fr_som[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(fr_lyr[0])
 
     # check fitness
     fitness_mtx = check_fitness(data_fr_exc, data_a, data_i, criteria_fr, criteria_corr, criteria_cv)
