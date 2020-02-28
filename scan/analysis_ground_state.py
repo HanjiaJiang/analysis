@@ -4,9 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.tri as tri
-import interpol
+# import interpol
 from matplotlib.patches import Polygon
+from tools import hori_join
+
 matplotlib.rcParams['font.size'] = 20.0
+
+do_interpol = False
 
 layers = ['L2/3', 'L4', 'L5', 'L6']
 
@@ -17,7 +21,7 @@ criteria_cv = [0.76, 1.2]
 
 # levels of g and bg_rate; must match the 'scans' data
 lvls_g = np.linspace(4.0, 8.0, 5)
-lvls_bg = np.linspace(2.0, 6.0, 5)
+lvls_bg = np.linspace(4.0, 8.0, 5)
 
 # extra criteria: Four-layer excitatory firing rate data from Yu, Svoboda, 2019
 exc_fr_high = [2.7 + 3.7/np.sqrt(5), 0.5 + 0.8/np.sqrt(95), 6.8 + 5.2/np.sqrt(23), 6.1 + 6.9/np.sqrt(30)]
@@ -38,7 +42,7 @@ def read_data(name):
 
 # function to draw the colormap
 # low, high: criteria boundaries
-def colormap(name, data, xs, ys, low, high,
+def colormap(prefix, name, data, xs, ys, low, high,
              low_extra=None, high_extra=None, fit_mtx=None, v_range=None, cmap='RdBu'):
     # rotate_format = '%.1e'
     criteria_color = 'black'
@@ -52,7 +56,7 @@ def colormap(name, data, xs, ys, low, high,
     # set plotting variables
     fig, axs = plt.subplots(4, 1, figsize=(6, 14), sharex=True, sharey=True, constrained_layout=True)
     axs = axs.ravel()
-    plot_name = '{}.png'.format(name)
+    plot_name = '{}_{}.png'.format(prefix, name)
     vmax = high + (high - low) * 2
     vmin = low - (high - low) * 2
     if type(v_range) is tuple and len(v_range) == 2:
@@ -90,16 +94,18 @@ def colormap(name, data, xs, ys, low, high,
             xlist = xs[idx1]
             ylist = ys[idx2]
             axs[k].scatter(xlist, ylist, s=50, color='r', zorder=10)
-            if len(xlist) > 2:
-                xi, yi = interpol.sort_by_angle(xlist.tolist(), ylist.tolist())
-                xi, yi = interpol.interpol_spline(xi, yi)
-                axs[k].add_patch(Polygon(np.array([xi, yi]).T, closed=True, fill=False, hatch='x', color='r', zorder=10))
-            # if len(xlist) <= 3 or all(x==xlist[0] for x in xlist) or all(y==ylist[0] for y in ylist):
-            #     axs[k].plot(xlist, ylist, 'r', zorder=10)
-            # else:
-            #     triang = tri.Triangulation(xlist, ylist)
-            #     axs[k].triplot(triang, 'r-', zorder=10)
-                # axs[k].tripcolor(xlist, ylist, np.zeros(len(xlist)))
+            if do_interpol:
+                if len(xlist) > 2:
+                    xi, yi = interpol.sort_by_angle(xlist.tolist(), ylist.tolist())
+                    xi, yi = interpol.interpol_spline(xi, yi)
+                    axs[k].add_patch(Polygon(np.array([xi, yi]).T, closed=True, fill=False, hatch='x', color='r', zorder=10))
+            else:
+                if len(xlist) <= 3 or all(x==xlist[0] for x in xlist) or all(y==ylist[0] for y in ylist):
+                    pass
+                else:
+                    triang = tri.Triangulation(xlist, ylist)
+                    axs[k].triplot(triang, 'r-', zorder=10)
+                    # axs[k].tripcolor(xlist, ylist, np.zeros(len(xlist)))
 
         # set off-limit colors
         cs.cmap.set_over("midnightblue")
@@ -111,12 +117,15 @@ def colormap(name, data, xs, ys, low, high,
         # set color bar
         if k == 3:
             cbar = fig.colorbar(cs, orientation='horizontal')
-            cbar.add_lines(cs_line)
+            cbar.ax.plot([low, low], [vmin, vmax], color='k', linewidth=2)
+            cbar.ax.plot([high, high], [vmin, vmax], color='k', linewidth=2)
+            # cbar.add_lines(cs_line)
             # if flg_extra_line:
             #     cbar.add_lines(cs_line_extra) # will override cs_line; to be solved
     fig.suptitle(name)
     fig.savefig(plot_name)
     plt.close()
+    return plot_name
 
 
 # check the data fitness
@@ -164,6 +173,8 @@ if __name__ == "__main__":
 
     print('data shape = {}'.format(data_a.shape))
 
+    params_c = tuple(map(int, inputs[0].split('/')[1].split('_')))[:2]
+
     for item in inputs:
         # get parameters
         params = tuple(map(int, item.split('/')[1].split('_')))
@@ -189,12 +200,18 @@ if __name__ == "__main__":
 
     # check fitness
     fitness_mtx = check_fitness(data_fr_exc, data_a, data_i, criteria_fr, criteria_corr, criteria_cv)
-    # print(fitness_mtx)
 
     # plotting
-    colormap('pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1], v_range=(-0.02, 0.02), fit_mtx=fitness_mtx)
-    colormap('cv-isi', data_i, lvls_g, lvls_bg, criteria_cv[0], criteria_cv[1], fit_mtx=fitness_mtx, v_range=(0.0, 1.5), cmap='Blues')
-    colormap('fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1],
-             low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 30.0), cmap='Blues')
-    colormap('fr-pv', data_fr_pv, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1], v_range=(0.0, 50.0), cmap='Blues')
-    colormap('fr-som', data_fr_som, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1], v_range=(0.0, 50.0), cmap='Blues')
+    names = []
+    names.append(colormap(str(params_c) + 'A', 'fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1],
+             low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 30.0), cmap='Blues'))
+    names.append(colormap(str(params_c) + 'B', 'pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1],
+             v_range=(-0.02, 0.02), fit_mtx=fitness_mtx))
+    names.append(colormap(str(params_c) + 'C', 'cv-isi', data_i, lvls_g, lvls_bg, criteria_cv[0], criteria_cv[1],
+             fit_mtx=fitness_mtx, v_range=(0.0, 1.5), cmap='Blues'))
+    names.append(colormap(str(params_c), 'fr-pv', data_fr_pv, lvls_g, lvls_bg, -np.inf, np.inf,
+             v_range=(0.0, 50.0), cmap='Blues'))
+    names.append(colormap(str(params_c), 'fr-som', data_fr_som, lvls_g, lvls_bg, -np.inf, np.inf,
+             v_range=(0.0, 50.0), cmap='Blues'))
+
+    hori_join(names, str(params_c) + '.png')
