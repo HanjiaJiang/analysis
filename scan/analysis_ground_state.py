@@ -4,13 +4,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.tri as tri
-# import interpol
+import interpol
 from matplotlib.patches import Polygon
 from tools import hori_join
 
 matplotlib.rcParams['font.size'] = 20.0
 
-do_interpol = False
+do_interpol = True
 
 layers = ['L2/3', 'L4', 'L5', 'L6']
 
