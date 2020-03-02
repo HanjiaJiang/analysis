@@ -20,8 +20,8 @@ criteria_corr = [0.0001, 0.008]
 criteria_cv = [0.76, 1.2]
 
 # levels of g and bg_rate; must match the 'scans' data
-lvls_g = np.linspace(4.0, 8.0, 5)
-lvls_bg = np.linspace(4.0, 8.0, 5)
+# lvls_g = np.linspace(4.0, 10.0, 7)
+# lvls_bg = np.linspace(2.0, 8.0, 7)
 
 # extra criteria: Four-layer excitatory firing rate data from Yu, Svoboda, 2019
 exc_fr_high = [2.7 + 3.7/np.sqrt(5), 0.5 + 0.8/np.sqrt(95), 6.8 + 5.2/np.sqrt(23), 6.1 + 6.9/np.sqrt(30)]
@@ -44,6 +44,9 @@ def read_data(name):
 # low, high: criteria boundaries
 def colormap(prefix, name, data, xs, ys, low, high,
              low_extra=None, high_extra=None, fit_mtx=None, v_range=None, cmap='RdBu'):
+    xs = np.array(xs)
+    ys = np.array(ys)
+
     # rotate_format = '%.1e'
     criteria_color = 'black'
 
@@ -65,8 +68,9 @@ def colormap(prefix, name, data, xs, ys, low, high,
 
     # x and y labels (to be improved)
     axs[-1].set_xlabel('g\n')
-    # axs[-1].set_ylabel('bg_rate (spikes/s)', rotation=90, color='w')
     fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
+    plt.xticks(xs)
+    plt.yticks(ys)
 
     for k, data_layer in enumerate(data):
         # data transposed so that row lies in x and column lies in y
@@ -80,12 +84,12 @@ def colormap(prefix, name, data, xs, ys, low, high,
                            extent=extent, vmax=vmax, vmin=vmin)
 
         # contour main criteria
-        cs_line = axs[k].contour(Z, levels=[low, high], colors=[criteria_color, criteria_color],
+        cs_line = axs[k].contour(Z, levels=[low, high], colors=criteria_color,
                                  extent=extent, linewidths=2)
 
         # contour extra criteria
         if flg_extra_line:
-            axs[k].contour(Z, levels=[low_extra[k], high_extra[k]], colors=[criteria_color, criteria_color],
+            axs[k].contour(Z, levels=[low_extra[k], high_extra[k]], colors=criteria_color,
                            extent=extent, linewidths=4, linestyles='dashed')
 
         # shaded patch for 'all fit' data
@@ -158,10 +162,16 @@ if __name__ == "__main__":
     np.set_printoptions(precision=4, suppress=True)
 
     # get input and output names
-    inputs = sys.argv[1:-1]
-    output = sys.argv[-1]
+    inputs = sys.argv[1:-5]
+    output = sys.argv[-5]
+    arg_g_start = int(sys.argv[-4])
+    arg_g_end = arg_g_start + int(sys.argv[-3])
+    arg_bg_start = int(sys.argv[-2])
+    arg_bg_end = arg_bg_start + int(sys.argv[-1])
     print('inputs =\n{}'.format(inputs))
     print('output = {}'.format(output))
+    lvls_g = list(range(arg_g_start, arg_g_end))
+    lvls_bg = list(range(arg_bg_start, arg_bg_end))
 
     # get dimension shape from the last
     input_shape = (len(layers), len(lvls_g), len(lvls_bg))
@@ -185,18 +195,18 @@ if __name__ == "__main__":
         if len(ai) == 4:
             for i, ai_lyr in enumerate(ai):
                 print('ai', params, ai_lyr[0], ai_lyr[1])
-                data_a[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(ai_lyr[0])
-                data_i[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(ai_lyr[1])
+                data_a[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(ai_lyr[0])
+                data_i[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(ai_lyr[1])
         if len(fr) == 13:
             for i, fr_lyr in enumerate(np.array(fr)[[0, 4, 7, 10]]):
                 print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_exc[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(fr_lyr[0])
+                data_fr_exc[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(fr_lyr[0])
             for i, fr_lyr in enumerate(np.array(fr)[[1, 5, 8, 11]]):
                 print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_pv[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(fr_lyr[0])
+                data_fr_pv[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(fr_lyr[0])
             for i, fr_lyr in enumerate(np.array(fr)[[2, 6, 9, 12]]):
                 print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_som[i, lvls_g.tolist().index(params[-2]), lvls_bg.tolist().index(params[-1])] = float(fr_lyr[0])
+                data_fr_som[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(fr_lyr[0])
 
     # check fitness
     fitness_mtx = check_fitness(data_fr_exc, data_a, data_i, criteria_fr, criteria_corr, criteria_cv)
