@@ -164,14 +164,10 @@ if __name__ == "__main__":
     # get input and output names
     inputs = sys.argv[1:-5]
     output = sys.argv[-5]
-    arg_g_start = int(sys.argv[-4])
-    arg_g_end = arg_g_start + int(sys.argv[-3])
-    arg_bg_start = int(sys.argv[-2])
-    arg_bg_end = arg_bg_start + int(sys.argv[-1])
     print('inputs =\n{}'.format(inputs))
     print('output = {}'.format(output))
-    lvls_g = list(range(arg_g_start, arg_g_end))
-    lvls_bg = list(range(arg_bg_start, arg_bg_end))
+    lvls_g = list(range(int(sys.argv[-4]), int(sys.argv[-4]) + int(sys.argv[-3])))
+    lvls_bg = list(range(int(sys.argv[-2]), int(sys.argv[-2]) + int(sys.argv[-1])))
 
     # get dimension shape from the last
     input_shape = (len(layers), len(lvls_g), len(lvls_bg))
@@ -183,10 +179,11 @@ if __name__ == "__main__":
 
     print('data shape = {}'.format(data_a.shape))
 
+    # constant parameters, e.g. ctsp and stp
     params_c = tuple(map(int, inputs[0].split('/')[1].split('_')))[:2]
 
     for item in inputs:
-        # get parameters
+        # get g and bg parameters
         params = tuple(map(int, item.split('/')[1].split('_')))
         ai = read_data(os.path.join(item, 'ai.dat'))
         fr = read_data(os.path.join(item, 'fr.dat'))
@@ -224,4 +221,4 @@ if __name__ == "__main__":
     names.append(colormap(str(params_c), 'fr-som', data_fr_som, lvls_g, lvls_bg, -np.inf, np.inf,
              v_range=(0.0, 50.0), cmap='Blues'))
 
-    hori_join(names, str(params_c) + '.png')
+    hori_join(names, str(params_c))
