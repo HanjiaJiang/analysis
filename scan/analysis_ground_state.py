@@ -18,10 +18,8 @@ layers = ['L2/3', 'L4', 'L5', 'L6']
 criteria_fr = [0.0, 10.0]
 criteria_corr = [0.0001, 0.008]
 criteria_cv = [0.76, 1.2]
-
-# levels of g and bg_rate; must match the 'scans' data
-# lvls_g = np.linspace(4.0, 10.0, 7)
-# lvls_bg = np.linspace(2.0, 8.0, 7)
+criteria_sf_spread = [-1.0, 100.0]
+criteria_sf_amp = [-1.0, 10000.0]
 
 # extra criteria: Four-layer excitatory firing rate data from Yu, Svoboda, 2019
 exc_fr_high = [2.7 + 3.7/np.sqrt(5), 0.5 + 0.8/np.sqrt(95), 6.8 + 5.2/np.sqrt(23), 6.1 + 6.9/np.sqrt(30)]
@@ -158,6 +156,7 @@ def check_fitness(data_fr, data_corr, data_cv, cri_fr, cri_corr, cri_cv):
     return chk_mtx
 
 
+# to-do: put into several functions
 if __name__ == "__main__":
     np.set_printoptions(precision=4, suppress=True)
 
@@ -169,15 +168,17 @@ if __name__ == "__main__":
     lvls_g = list(range(int(sys.argv[-4]), int(sys.argv[-4]) + int(sys.argv[-3])))
     lvls_bg = list(range(int(sys.argv[-2]), int(sys.argv[-2]) + int(sys.argv[-1])))
 
-    # get dimension shape from the last
+    # get dimension shape
     input_shape = (len(layers), len(lvls_g), len(lvls_bg))
     data_a = np.full(input_shape, np.nan)
     data_i = np.full(input_shape, np.nan)
     data_fr_exc = np.full(input_shape, np.nan)
     data_fr_pv = np.full(input_shape, np.nan)
     data_fr_som = np.full(input_shape, np.nan)
+    data_sf_spread = np.full(input_shape, np.nan)
+    data_sf_amp = np.full(input_shape, np.nan)
 
-    print('data shape = {}'.format(data_a.shape))
+    print('data shape = {}'.format(input_shape))
 
     # constant parameters, e.g. ctsp and stp
     params_c = tuple(map(int, inputs[0].split('/')[1].split('_')))[:2]
@@ -187,6 +188,7 @@ if __name__ == "__main__":
         params = tuple(map(int, item.split('/')[1].split('_')))
         ai = read_data(os.path.join(item, 'ai.dat'))
         fr = read_data(os.path.join(item, 'fr.dat'))
+        sf = read_data(os.path.join(item, 'sf.dat'))
 
         # read data from each layer and group
         if len(ai) == 4:
@@ -204,21 +206,45 @@ if __name__ == "__main__":
             for i, fr_lyr in enumerate(np.array(fr)[[2, 6, 9, 12]]):
                 print('fr', params, fr_lyr[0], fr_lyr[1])
                 data_fr_som[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(fr_lyr[0])
+        if len(sf) == 4:
+            for i, sf_lyr in enumerate(sf):
+                print('sf', params, sf_lyr[0], sf_lyr[1])
+                data_sf_spread[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(sf_lyr[0])
+                data_sf_amp[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(sf_lyr[1])
 
     # check fitness
     fitness_mtx = check_fitness(data_fr_exc, data_a, data_i, criteria_fr, criteria_corr, criteria_cv)
 
-    # plotting
-    names = []
-    names.append(colormap(str(params_c) + 'A', 'fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1],
+    # plotting:
+    # ground state
+    names_gs = []
+    names_gs.append(colormap(str(params_c) + 'A', 'fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1],
              low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 30.0), cmap='Blues'))
-    names.append(colormap(str(params_c) + 'B', 'pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1],
+    names_gs.append(colormap(str(params_c) + 'B', 'pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1],
              v_range=(-0.02, 0.02), fit_mtx=fitness_mtx))
-    names.append(colormap(str(params_c) + 'C', 'cv-isi', data_i, lvls_g, lvls_bg, criteria_cv[0], criteria_cv[1],
+    names_gs.append(colormap(str(params_c) + 'C', 'cv-isi', data_i, lvls_g, lvls_bg, criteria_cv[0], criteria_cv[1],
              fit_mtx=fitness_mtx, v_range=(0.0, 1.5), cmap='Blues'))
-    names.append(colormap(str(params_c), 'fr-pv', data_fr_pv, lvls_g, lvls_bg, -np.inf, np.inf,
+    names_gs.append(colormap(str(params_c), 'fr-pv', data_fr_pv, lvls_g, lvls_bg, -np.inf, np.inf,
              v_range=(0.0, 50.0), cmap='Blues'))
-    names.append(colormap(str(params_c), 'fr-som', data_fr_som, lvls_g, lvls_bg, -np.inf, np.inf,
+    names_gs.append(colormap(str(params_c), 'fr-som', data_fr_som, lvls_g, lvls_bg, -np.inf, np.inf,
              v_range=(0.0, 50.0), cmap='Blues'))
 
-    hori_join(names, str(params_c))
+    # synfire
+    names_sf = []
+    names_sf.append(colormap(str(params_c), 'sf-spread (ms)', data_sf_spread, lvls_g, lvls_bg, criteria_sf_spread[0], criteria_sf_spread[1],
+            v_range=(0.0, 10.0), cmap='Blues'))
+    names_sf.append(colormap(str(params_c), 'sf-amp (spikes)', data_sf_amp, lvls_g, lvls_bg, criteria_sf_amp[0], criteria_sf_amp[1],
+            v_range=(0.0, 2000.0), cmap='Blues'))
+
+    # join plots
+    hori_join(names_gs, str(params_c) + '-gs')
+    hori_join(names_sf, str(params_c) + '-sf')
+
+    # remove original plots; to be improved ...
+    for name in names_gs:
+        if os.path.exists(name):
+              os.remove(name)
+
+    for name in names_sf:
+        if os.path.exists(name):
+              os.remove(name)
