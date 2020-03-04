@@ -1,5 +1,5 @@
-F1_LVL = 1
-F2_LVL = 1
+F1_LVL = 0
+F2_LVL = 0
 G_START = 4
 G_COUNT = 7
 BG_START = 2

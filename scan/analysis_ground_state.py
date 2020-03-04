@@ -18,8 +18,8 @@ layers = ['L2/3', 'L4', 'L5', 'L6']
 criteria_fr = [0.0, 10.0]
 criteria_corr = [0.0001, 0.008]
 criteria_cv = [0.76, 1.2]
-criteria_sf_spread = [-1.0, 100.0]
-criteria_sf_amp = [-1.0, 10000.0]
+criteria_sf_spread = [-100.0, 100.0]
+criteria_sf_amp = [-10000.0, 10000.0]
 
 # extra criteria: Four-layer excitatory firing rate data from Yu, Svoboda, 2019
 exc_fr_high = [2.7 + 3.7/np.sqrt(5), 0.5 + 0.8/np.sqrt(95), 6.8 + 5.2/np.sqrt(23), 6.1 + 6.9/np.sqrt(30)]
