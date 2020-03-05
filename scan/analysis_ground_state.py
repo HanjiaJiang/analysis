@@ -161,12 +161,13 @@ if __name__ == "__main__":
     np.set_printoptions(precision=4, suppress=True)
 
     # get input and output names
-    inputs = sys.argv[1:-5]
-    output = sys.argv[-5]
+    inputs = sys.argv[1:-7]
+    output = sys.argv[-7]
     print('inputs =\n{}'.format(inputs))
     print('output = {}'.format(output))
-    lvls_g = list(range(int(sys.argv[-4]), int(sys.argv[-4]) + int(sys.argv[-3])))
-    lvls_bg = list(range(int(sys.argv[-2]), int(sys.argv[-2]) + int(sys.argv[-1])))
+    lvls_g = list(range(int(sys.argv[-6]), int(sys.argv[-5]) + int(sys.argv[-4]), int(sys.argv[-4])))
+    lvls_bg = list(range(int(sys.argv[-3]), int(sys.argv[-2]) + int(sys.argv[-1]), int(sys.argv[-1])))
+    print(lvls_g, lvls_bg)
 
     # get dimension shape
     input_shape = (len(layers), len(lvls_g), len(lvls_bg))

@@ -1,9 +1,11 @@
-F1_LVL = 0
-F2_LVL = 0
+F1_COUNT = 1
+F2_COUNT = 1
 G_START = 4
-G_COUNT = 7
+G_STEP = 1
+G_END = 10
 BG_START = 2
-BG_COUNT = 7
+BG_STEP = 1
+BG_END = 8
 
 localrules: all
 
@@ -13,11 +15,11 @@ rule all:
 
 rule analysis:
     input:
-        ai = expand('scans/{f1}_{f2}_{g}_{bg}/', f1=F1_LVL, f2=F2_LVL, g=range(G_START, G_START + G_COUNT), bg=range(BG_START, BG_START + BG_COUNT))
+        ai = expand('scans/{a}_{b}_{c}_{d}/', a=range(F1_COUNT), b=range(F2_COUNT), c=range(G_START, G_END + G_STEP, G_STEP), d=range(BG_START, BG_END + BG_STEP, BG_STEP))
     output:
         'none.png'
 
     shell:
         '''
-        python analysis_ground_state.py {input.ai} {output} {G_START} {G_COUNT} {BG_START} {BG_COUNT}
+        python analysis_ground_state.py {input.ai} {output} {G_START} {G_END} {G_STEP} {BG_START} {BG_END} {BG_STEP}
         '''
