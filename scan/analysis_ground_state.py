@@ -46,7 +46,7 @@ def colormap(prefix, name, data, xs, ys, low, high,
     ys = np.array(ys)
 
     # rotate_format = '%.1e'
-    criteria_color = 'black'
+    contour_color = 'black'
 
     # for extra criteria
     flg_extra_line = False
@@ -58,17 +58,22 @@ def colormap(prefix, name, data, xs, ys, low, high,
     fig, axs = plt.subplots(4, 1, figsize=(6, 14), sharex=True, sharey=True, constrained_layout=True)
     axs = axs.ravel()
     plot_name = '{}_{}.png'.format(prefix, name)
-    vmax = high + (high - low) * 2
-    vmin = low - (high - low) * 2
+
+    # color range
     if type(v_range) is tuple and len(v_range) == 2:
         vmin = v_range[0]
         vmax = v_range[1]
+    else:
+        vmin = low - (high - low) * 2
+        vmax = high + (high - low) * 2
 
     # x and y labels (to be improved)
-    axs[-1].set_xlabel('g\n')
+    plt.xlabel('g\n')
     fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
     plt.xticks(xs)
     plt.yticks(ys)
+    plt.xlim((xs[0], xs[-1]))
+    plt.ylim((ys[0], ys[-1]))
 
     for k, data_layer in enumerate(data):
         # data transposed so that row lies in x and column lies in y
@@ -82,12 +87,12 @@ def colormap(prefix, name, data, xs, ys, low, high,
                            extent=extent, vmax=vmax, vmin=vmin)
 
         # contour main criteria
-        cs_line = axs[k].contour(Z, levels=[low, high], colors=criteria_color,
+        cs_line = axs[k].contour(Z, levels=[low, high], colors=contour_color,
                                  extent=extent, linewidths=2)
 
         # contour extra criteria
         if flg_extra_line:
-            axs[k].contour(Z, levels=[low_extra[k], high_extra[k]], colors=criteria_color,
+            axs[k].contour(Z, levels=[low_extra[k], high_extra[k]], colors=contour_color,
                            extent=extent, linewidths=4, linestyles='dashed')
 
         # shaded patch for 'all fit' data
@@ -97,17 +102,13 @@ def colormap(prefix, name, data, xs, ys, low, high,
             ylist = ys[idx2]
             axs[k].scatter(xlist, ylist, s=50, color='r', zorder=10)
             if do_interpol:
-                if len(xlist) > 2:
-                    xi, yi = interpol.sort_by_angle(xlist.tolist(), ylist.tolist())
+                if len(xlist) > 3:
+                    xi, yi = interpol.get_outline(xlist.tolist(), ylist.tolist(), 2.0)
+                    # xi, yi = interpol.sort_by_angle(xlist.tolist(), ylist.tolist())
                     xi, yi = interpol.interpol_spline(xi, yi)
                     axs[k].add_patch(Polygon(np.array([xi, yi]).T, closed=True, fill=False, hatch='x', color='r', zorder=10))
-            else:
-                if len(xlist) <= 3 or all(x==xlist[0] for x in xlist) or all(y==ylist[0] for y in ylist):
-                    pass
-                else:
-                    triang = tri.Triangulation(xlist, ylist)
-                    axs[k].triplot(triang, 'r-', zorder=10)
-                    # axs[k].tripcolor(xlist, ylist, np.zeros(len(xlist)))
+            #         triang = tri.Triangulation(xlist, ylist)
+            #         axs[k].triplot(triang, 'r-', zorder=10)
 
         # set off-limit colors
         cs.cmap.set_over("midnightblue")
@@ -116,14 +117,11 @@ def colormap(prefix, name, data, xs, ys, low, high,
         # mark layer labels (L2/3 ~ L6)
         axs[k].text(xs[0] - 0.5*(xs[-1] - xs[0]), ys[0] + 0.5*(ys[-1] - ys[0]), layers[k])
 
-        # set color bar
-        if k == 3:
-            cbar = fig.colorbar(cs, orientation='horizontal')
-            cbar.ax.plot([low, low], [vmin, vmax], color='k', linewidth=2)
-            cbar.ax.plot([high, high], [vmin, vmax], color='k', linewidth=2)
-            # cbar.add_lines(cs_line)
-            # if flg_extra_line:
-            #     cbar.add_lines(cs_line_extra) # will override cs_line; to be solved
+    # colorbar
+    cbar = fig.colorbar(cs, ax=axs.tolist(), orientation='horizontal')
+    cbar.ax.plot([low, low], [vmin, vmax], color='k', linewidth=2)
+    cbar.ax.plot([high, high], [vmin, vmax], color='k', linewidth=2)
+
     fig.suptitle(name)
     fig.savefig(plot_name)
     plt.close()
@@ -232,14 +230,14 @@ if __name__ == "__main__":
 
     # synfire
     names_sf = []
-    names_sf.append(colormap(str(params_c), 'sf-spread (ms)', data_sf_spread, lvls_g, lvls_bg, criteria_sf_spread[0], criteria_sf_spread[1],
-            v_range=(0.0, 10.0), cmap='Blues'))
-    names_sf.append(colormap(str(params_c), 'sf-amp (spikes)', data_sf_amp, lvls_g, lvls_bg, criteria_sf_amp[0], criteria_sf_amp[1],
-            v_range=(0.0, 2000.0), cmap='Blues'))
+    # names_sf.append(colormap(str(params_c), 'sf-spread (ms)', data_sf_spread, lvls_g, lvls_bg, criteria_sf_spread[0], criteria_sf_spread[1],
+    #         v_range=(0.0, 10.0), cmap='Blues'))
+    # names_sf.append(colormap(str(params_c), 'sf-amp (spikes)', data_sf_amp, lvls_g, lvls_bg, criteria_sf_amp[0], criteria_sf_amp[1],
+    #         v_range=(0.0, 2000.0), cmap='Blues'))
 
     # join plots
     hori_join(names_gs, str(params_c) + '-gs')
-    hori_join(names_sf, str(params_c) + '-sf')
+    # hori_join(names_sf, str(params_c) + '-sf')
 
     # remove original plots; to be improved ...
     for name in names_gs:
