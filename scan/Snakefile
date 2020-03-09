@@ -1,11 +1,11 @@
 F1 = 1
-F2 = 1
-G_START = 4
-G_STEP = 1
-G_END = 10
-BG_START = 2
-BG_STEP = 1
-BG_END = 8
+F2 = 0
+F3_START = 1200
+F3_STEP = 100
+F3_END = 1800
+F4_START = 500
+F4_STEP = 20
+F4_END = 620
 
 localrules: all
 
@@ -15,11 +15,11 @@ rule all:
 
 rule analysis:
     input:
-        ai = expand('scans/{a}_{b}_{c}_{d}/', a=F1, b=F2, c=range(G_START, G_END + G_STEP, G_STEP), d=range(BG_START, BG_END + BG_STEP, BG_STEP))
+        ai = expand('scans/{a}_{b}_{c}_{d}/', a=F1, b=F2, c=range(F3_START, F3_END + F3_STEP, F3_STEP), d=range(F4_START, F4_END + F4_STEP, F4_STEP))
     output:
         'none.png'
 
     shell:
         '''
-        python analysis_ground_state.py {input.ai} {output} {G_START} {G_END} {G_STEP} {BG_START} {BG_END} {BG_STEP}
+        python analysis_ground_state.py {input.ai} {output} {F3_START} {F3_END} {F3_STEP} {F4_START} {F4_END} {F4_STEP}
         '''

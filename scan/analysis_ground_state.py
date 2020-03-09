@@ -42,6 +42,7 @@ def read_data(name):
 # low, high: criteria boundaries
 def colormap(prefix, name, data, xs, ys, low, high,
              low_extra=None, high_extra=None, fit_mtx=None, v_range=None, cmap='RdBu'):
+
     xs = np.array(xs)
     ys = np.array(ys)
 
@@ -83,7 +84,7 @@ def colormap(prefix, name, data, xs, ys, low, high,
         extent = [np.min(xs), np.max(xs), np.min(ys), np.max(ys)]
 
         # colormap plots
-        cs = axs[k].imshow(Z, interpolation='gaussian', cmap=cmap, origin='lower',
+        cs = axs[k].imshow(Z, interpolation='none', cmap=cmap, origin='lower',
                            extent=extent, vmax=vmax, vmin=vmin)
 
         # contour main criteria
