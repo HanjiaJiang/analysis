@@ -6,6 +6,7 @@ import matplotlib
 import matplotlib.tri as tri
 import interpol
 from matplotlib.patches import Polygon
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from tools import hori_join
 
 matplotlib.rcParams['font.size'] = 20.0
@@ -42,9 +43,11 @@ def read_data(name):
 # low, high: criteria boundaries
 def colormap(prefix, name, data, xs, ys, low, high,
              low_extra=None, high_extra=None, fit_mtx=None, v_range=None, cmap='RdBu'):
-
     xs = np.array(xs)
     ys = np.array(ys)
+
+    # the threshold for outer circle of delaunay triangles
+    delaunay_alpha = np.sqrt((xs[1]-xs[0])**2 + (ys[1]-ys[0])**2)
 
     # rotate_format = '%.1e'
     contour_color = 'black'
@@ -68,10 +71,11 @@ def colormap(prefix, name, data, xs, ys, low, high,
         vmin = low - (high - low) * 2
         vmax = high + (high - low) * 2
 
-    # x and y labels (to be improved)
+    # x and y labels to beyimproved)
     plt.xlabel('g\n')
-    fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
-    plt.xticks(xs)
+    plt.ylabel('bg_rate (spikes/s)', va='center', rotation='vertical')
+    # fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
+    plt.xticks(xs, rotation=30)
     plt.yticks(ys)
     plt.xlim((xs[0], xs[-1]))
     plt.ylim((ys[0], ys[-1]))
@@ -104,7 +108,7 @@ def colormap(prefix, name, data, xs, ys, low, high,
             axs[k].scatter(xlist, ylist, s=50, color='r', zorder=10)
             if do_interpol:
                 if len(xlist) > 3:
-                    xi, yi = interpol.get_outline(xlist.tolist(), ylist.tolist(), 2.0)
+                    xi, yi = interpol.get_outline(xlist.tolist(), ylist.tolist(), delaunay_alpha)
                     # xi, yi = interpol.sort_by_angle(xlist.tolist(), ylist.tolist())
                     xi, yi = interpol.interpol_spline(xi, yi)
                     axs[k].add_patch(Polygon(np.array([xi, yi]).T, closed=True, fill=False, hatch='x', color='r', zorder=10))
@@ -118,8 +122,21 @@ def colormap(prefix, name, data, xs, ys, low, high,
         # mark layer labels (L2/3 ~ L6)
         axs[k].text(xs[0] - 0.5*(xs[-1] - xs[0]), ys[0] + 0.5*(ys[-1] - ys[0]), layers[k])
 
+        # set plot aspect ratio
+        axs[k].set_aspect(float((xs[-1] - xs[0])/(ys[-1] - ys[0])))
+
+
     # colorbar
-    cbar = fig.colorbar(cs, ax=axs.tolist(), orientation='horizontal')
+
+    cbar = fig.colorbar(cs, ax=axs.tolist(), orientation='horizontal', shrink=0.6)
+    # axins1 = inset_axes(axs[-1],
+    #                 width="100%",  # width = 50% of parent_bbox width
+    #                 height="10%",  # height : 5%
+    #                 loc='lower center',
+    #                 bbox_to_anchor=(0., -0.6, 1., 1.),
+    #                 bbox_transform=axs[-1].transAxes,
+    #                 borderpad=0)
+    # cbar = fig.colorbar(cs, cax=axins1, orientation='horizontal')
     cbar.ax.plot([low, low], [vmin, vmax], color='k', linewidth=2)
     cbar.ax.plot([high, high], [vmin, vmax], color='k', linewidth=2)
 
