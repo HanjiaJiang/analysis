@@ -106,12 +106,12 @@ def colormap(prefix, name, data, xs, ys, low, high,
             xlist = xs[idx1]
             ylist = ys[idx2]
             axs[k].scatter(xlist, ylist, s=50, color='r', zorder=10)
-            if do_interpol:
-                if len(xlist) > 3:
-                    xi, yi = interpol.get_outline(xlist.tolist(), ylist.tolist(), delaunay_alpha)
+            # if do_interpol:
+                # if len(xlist) > 3:
+                    # xi, yi = interpol.get_outline(xlist.tolist(), ylist.tolist(), delaunay_alpha)
                     # xi, yi = interpol.sort_by_angle(xlist.tolist(), ylist.tolist())
-                    xi, yi = interpol.interpol_spline(xi, yi)
-                    axs[k].add_patch(Polygon(np.array([xi, yi]).T, closed=True, fill=False, hatch='x', color='r', zorder=10))
+                    # xi, yi = interpol.interpol_spline(xi, yi)
+                    # axs[k].add_patch(Polygon(np.array([xi, yi]).T, closed=True, fill=False, hatch='x', color='r', zorder=10))
             #         triang = tri.Triangulation(xlist, ylist)
             #         axs[k].triplot(triang, 'r-', zorder=10)
 
