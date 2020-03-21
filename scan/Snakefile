@@ -1,11 +1,11 @@
 F1 = 0
-F2 = 0
-F3_START = 1200
-F3_STEP = 100
-F3_END = 1800
-F4_START = 500
-F4_STEP = 20
-F4_END = 620
+F2 = 1
+F3_START = 4
+F3_STEP = 1
+F3_END = 10
+F4_START = 2
+F4_STEP = 1
+F4_END = 8
 
 localrules: all
 
