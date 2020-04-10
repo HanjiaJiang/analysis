@@ -1,11 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import interpolate
-from matplotlib.patches import Polygon
-
-#
 from scipy.spatial import Delaunay
-import numpy as np
+from matplotlib.patches import Polygon
 
 # get arccosine
 def arccos_polygon(dx, dy):

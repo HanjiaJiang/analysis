@@ -4,10 +4,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
 import matplotlib.tri as tri
-import interpol
 from matplotlib.patches import Polygon
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-from tools import hori_join
+# my own modules
+import tools
+import interpol
 
 matplotlib.rcParams['font.size'] = 20.0
 
@@ -71,7 +71,7 @@ def colormap(prefix, name, data, xs, ys, low, high,
         vmin = low - (high - low) * 2
         vmax = high + (high - low) * 2
 
-    # x and y labels to beyimproved)
+    # x and y labels to be improved
     plt.xlabel('g\n')
     plt.ylabel('bg_rate (spikes/s)', va='center', rotation='vertical')
     # fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
@@ -127,15 +127,7 @@ def colormap(prefix, name, data, xs, ys, low, high,
 
 
     # colorbar
-
     cbar = fig.colorbar(cs, ax=axs.tolist(), orientation='horizontal', shrink=0.6)
-    # axins1 = inset_axes(axs[-1],
-    #                 width="100%",  # width = 50% of parent_bbox width
-    #                 height="10%",  # height : 5%
-    #                 loc='lower center',
-    #                 bbox_to_anchor=(0., -0.6, 1., 1.),
-    #                 bbox_transform=axs[-1].transAxes,
-    #                 borderpad=0)
     # cbar = fig.colorbar(cs, cax=axins1, orientation='horizontal')
     cbar.ax.plot([low, low], [vmin, vmax], color='k', linewidth=2)
     cbar.ax.plot([high, high], [vmin, vmax], color='k', linewidth=2)
@@ -172,96 +164,96 @@ def check_fitness(data_fr, data_corr, data_cv, cri_fr, cri_corr, cri_cv):
     return chk_mtx
 
 
+def str2list(list_str):
+    cache = []
+    for item in list_str:
+        cache.append(np.array(item.split('/')[-2].split('_')).astype(int))
+    cache = np.array(cache)
+    lvls_1 = list(set(cache[:, 0]))
+    lvls_2 = list(set(cache[:, 1]))
+    lvls_3 = list(set(cache[:, 2]))
+    lvls_4 = list(set(cache[:, 3]))
+    return lvls_1, lvls_2, lvls_3, lvls_4
+
 # to-do: put into several functions
 if __name__ == "__main__":
     np.set_printoptions(precision=4, suppress=True)
 
     # get input and output names
-    inputs = sys.argv[1:-7]
-    output = sys.argv[-7]
-    print('inputs =\n{}'.format(inputs))
-    print('output = {}'.format(output))
-    lvls_g = list(range(int(sys.argv[-6]), int(sys.argv[-5]) + int(sys.argv[-4]), int(sys.argv[-4])))
-    lvls_bg = list(range(int(sys.argv[-3]), int(sys.argv[-2]) + int(sys.argv[-1]), int(sys.argv[-1])))
-    print(lvls_g, lvls_bg)
+    inputs = sys.argv[1:-1]
+    lvls_1, lvls_2, lvls_g, lvls_bg = str2list(inputs)
+    print('levels =\n{}\n{}\n{}\n{}\n'.format(lvls_1, lvls_2, lvls_g, lvls_bg))
 
     # get dimension shape
     input_shape = (len(layers), len(lvls_g), len(lvls_bg))
-    data_a = np.full(input_shape, np.nan)
-    data_i = np.full(input_shape, np.nan)
-    data_fr_exc = np.full(input_shape, np.nan)
-    data_fr_pv = np.full(input_shape, np.nan)
-    data_fr_som = np.full(input_shape, np.nan)
-    data_sf_spread = np.full(input_shape, np.nan)
-    data_sf_amp = np.full(input_shape, np.nan)
 
-    print('data shape = {}'.format(input_shape))
+    print('data shape = {}\n'.format(input_shape))
 
     # constant parameters, e.g. ctsp and stp
-    params_c = tuple(map(int, inputs[0].split('/')[1].split('_')))[:2]
+    for a, lvl1 in enumerate(lvls_1):
+        for b, lvl2 in enumerate(lvls_2):
+            data_a = np.full(input_shape, np.nan)
+            data_i = np.full(input_shape, np.nan)
+            data_fr_exc = np.full(input_shape, np.nan)
+            data_fr_pv = np.full(input_shape, np.nan)
+            data_fr_som = np.full(input_shape, np.nan)
+            data_sf_spread = np.full(input_shape, np.nan)
+            data_sf_amp = np.full(input_shape, np.nan)
+            for c, lvlg in enumerate(lvls_g):
+                for d, lvlbg in enumerate(lvls_bg):
+                    ai = read_data(os.path.join('scans', '{}_{}_{}_{}'.format(lvl1, lvl2, lvlg, lvlbg), 'ai.dat'))
+                    fr = read_data(os.path.join('scans', '{}_{}_{}_{}'.format(lvl1, lvl2, lvlg, lvlbg), 'fr.dat'))
+                    sf = read_data(os.path.join('scans', '{}_{}_{}_{}'.format(lvl1, lvl2, lvlg, lvlbg), 'sf.dat'))
+                    # read data from each layer and group
+                    if len(ai) == 4:
+                        for i, ai_lyr in enumerate(ai):
+                            data_a[i, c, d] = float(ai_lyr[0])
+                            data_i[i, c, d] = float(ai_lyr[1])
+                    if len(fr) == 13:
+                        for i, fr_lyr in enumerate(np.array(fr)[[0, 4, 7, 10]]):
+                            data_fr_exc[i, c, d] = float(fr_lyr[0])
+                        for i, fr_lyr in enumerate(np.array(fr)[[1, 5, 8, 11]]):
+                            data_fr_pv[i, c, d] = float(fr_lyr[0])
+                        for i, fr_lyr in enumerate(np.array(fr)[[2, 6, 9, 12]]):
+                            data_fr_som[i, c, d] = float(fr_lyr[0])
+                    if len(sf) == 4:
+                        for i, sf_lyr in enumerate(sf):
+                            data_sf_spread[i, c, d] = float(sf_lyr[0])
+                            data_sf_amp[i, c, d] = float(sf_lyr[1])
 
-    for item in inputs:
-        # get g and bg parameters
-        params = tuple(map(int, item.split('/')[1].split('_')))
-        ai = read_data(os.path.join(item, 'ai.dat'))
-        fr = read_data(os.path.join(item, 'fr.dat'))
-        sf = read_data(os.path.join(item, 'sf.dat'))
+            # check fitness
+            fitness_mtx = check_fitness(data_fr_exc, data_a, data_i, criteria_fr, criteria_corr, criteria_cv)
 
-        # read data from each layer and group
-        if len(ai) == 4:
-            for i, ai_lyr in enumerate(ai):
-                print('ai', params, ai_lyr[0], ai_lyr[1])
-                data_a[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(ai_lyr[0])
-                data_i[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(ai_lyr[1])
-        if len(fr) == 13:
-            for i, fr_lyr in enumerate(np.array(fr)[[0, 4, 7, 10]]):
-                print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_exc[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(fr_lyr[0])
-            for i, fr_lyr in enumerate(np.array(fr)[[1, 5, 8, 11]]):
-                print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_pv[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(fr_lyr[0])
-            for i, fr_lyr in enumerate(np.array(fr)[[2, 6, 9, 12]]):
-                print('fr', params, fr_lyr[0], fr_lyr[1])
-                data_fr_som[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(fr_lyr[0])
-        if len(sf) == 4:
-            for i, sf_lyr in enumerate(sf):
-                print('sf', params, sf_lyr[0], sf_lyr[1])
-                data_sf_spread[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(sf_lyr[0])
-                data_sf_amp[i, lvls_g.index(params[-2]), lvls_bg.index(params[-1])] = float(sf_lyr[1])
+            # plotting:
+            # ground state
+            names_gs = []
+            tag_gs = '({},{})_'.format(lvl1, lvl2)
+            names_gs.append(colormap(tag_gs + '-A', 'fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1],
+                     low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 30.0), cmap='Blues'))
+            names_gs.append(colormap(tag_gs + '-B', 'pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1],
+                     v_range=(-0.02, 0.02), fit_mtx=fitness_mtx))
+            names_gs.append(colormap(tag_gs + '-C', 'cv-isi', data_i, lvls_g, lvls_bg, criteria_cv[0], criteria_cv[1],
+                     fit_mtx=fitness_mtx, v_range=(0.0, 1.5), cmap='Blues'))
+            names_gs.append(colormap(tag_gs + '-D', 'fr-pv', data_fr_pv, lvls_g, lvls_bg, -np.inf, np.inf,
+                     v_range=(0.0, 50.0), cmap='Blues'))
+            names_gs.append(colormap(tag_gs + '-E', 'fr-som', data_fr_som, lvls_g, lvls_bg, -np.inf, np.inf,
+                     v_range=(0.0, 50.0), cmap='Blues'))
 
-    # check fitness
-    fitness_mtx = check_fitness(data_fr_exc, data_a, data_i, criteria_fr, criteria_corr, criteria_cv)
+            # synfire
+            # names_sf = []
+            # names_sf.append(colormap(str(params_c), 'sf-spread (ms)', data_sf_spread, lvls_g, lvls_bg, criteria_sf_spread[0], criteria_sf_spread[1],
+            #         v_range=(0.0, 10.0), cmap='Blues'))
+            # names_sf.append(colormap(str(params_c), 'sf-amp (spikes)', data_sf_amp, lvls_g, lvls_bg, criteria_sf_amp[0], criteria_sf_amp[1],
+            #         v_range=(0.0, 2000.0), cmap='Blues'))
 
-    # plotting:
-    # ground state
-    names_gs = []
-    names_gs.append(colormap(str(params_c) + 'A', 'fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1],
-             low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 30.0), cmap='Blues'))
-    names_gs.append(colormap(str(params_c) + 'B', 'pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1],
-             v_range=(-0.02, 0.02), fit_mtx=fitness_mtx))
-    names_gs.append(colormap(str(params_c) + 'C', 'cv-isi', data_i, lvls_g, lvls_bg, criteria_cv[0], criteria_cv[1],
-             fit_mtx=fitness_mtx, v_range=(0.0, 1.5), cmap='Blues'))
-    names_gs.append(colormap(str(params_c), 'fr-pv', data_fr_pv, lvls_g, lvls_bg, -np.inf, np.inf,
-             v_range=(0.0, 50.0), cmap='Blues'))
-    names_gs.append(colormap(str(params_c), 'fr-som', data_fr_som, lvls_g, lvls_bg, -np.inf, np.inf,
-             v_range=(0.0, 50.0), cmap='Blues'))
+            # join plots
+            tools.hori_join(names_gs, tag_gs)
 
-    # synfire
-    names_sf = []
-    # names_sf.append(colormap(str(params_c), 'sf-spread (ms)', data_sf_spread, lvls_g, lvls_bg, criteria_sf_spread[0], criteria_sf_spread[1],
-    #         v_range=(0.0, 10.0), cmap='Blues'))
-    # names_sf.append(colormap(str(params_c), 'sf-amp (spikes)', data_sf_amp, lvls_g, lvls_bg, criteria_sf_amp[0], criteria_sf_amp[1],
-    #         v_range=(0.0, 2000.0), cmap='Blues'))
+            # remove original plots; to be improved ...
+            for name in names_gs:
+                if os.path.exists(name):
+                      os.remove(name)
 
-    # join plots
-    hori_join(names_gs, str(params_c) + '-gs')
-    # hori_join(names_sf, str(params_c) + '-sf')
-
-    # remove original plots; to be improved ...
-    for name in names_gs:
-        if os.path.exists(name):
-              os.remove(name)
-
-    for name in names_sf:
-        if os.path.exists(name):
-              os.remove(name)
+            for name in names_sf:
+                if os.path.exists(name):
+                      os.remove(name)

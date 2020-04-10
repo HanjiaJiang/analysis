@@ -1,5 +1,9 @@
-F1 = 0
-F2 = 1
+F1_START = 1300
+F1_STEP = 100
+F1_END = 1700
+F2_START = 580
+F2_STEP = 10
+F2_END = 620
 F3_START = 4
 F3_STEP = 1
 F3_END = 10
@@ -15,11 +19,15 @@ rule all:
 
 rule analysis:
     input:
-        ai = expand('scans/{a}_{b}_{c}_{d}/', a=F1, b=F2, c=range(F3_START, F3_END + F3_STEP, F3_STEP), d=range(F4_START, F4_END + F4_STEP, F4_STEP))
+        ai = expand('scans/{a}_{b}_{c}_{d}/',
+            a=range(F1_START, F1_END + F1_STEP, F1_STEP),
+            b=range(F2_START, F2_END + F2_STEP, F2_STEP),
+            c=range(F3_START, F3_END + F3_STEP, F3_STEP),
+            d=range(F4_START, F4_END + F4_STEP, F4_STEP))
     output:
         'none.png'
 
     shell:
         '''
-        python analysis_ground_state.py {input.ai} {output} {F3_START} {F3_END} {F3_STEP} {F4_START} {F4_END} {F4_STEP}
+        python analysis_gs.py {input.ai} {output}
         '''
