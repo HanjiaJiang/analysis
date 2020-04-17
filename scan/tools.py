@@ -11,8 +11,7 @@ import matplotlib.pyplot as plt
 
 def openfile():
     Tk().withdraw() # we don't want a full GUI, so keep the root window from appearing
-    filename = filedialog.askopenfilename() # show an "Open" dialog box and return the path to the selected file
-    # filename = filedialog.askopenfilename(initialdir = "~/Documents/") # show an "Open" dialog box and return the path to the selected file
+    filename = filedialog.askopenfilename(initialdir = os.getcwd()) # show an "Open" dialog box and return the path to the selected file
     return filename
 
 
@@ -45,6 +44,7 @@ def hori_join(names, done_name):
     toImage.save(done_name + '.png')
 
 
+# still to be fixed
 def show_images(images, cols = 1, titles = None):
     """Display a list of images in a single figure with matplotlib.
 
@@ -73,14 +73,22 @@ def show_images(images, cols = 1, titles = None):
     plt.savefig('combined.png')
 
 
-if __name__ == "__main__":
-    cache = {}
+def get_png_combine():
+    # get all .png files and the set of initial tags
+    fnames = []
+    tag_set = []
     for file in os.listdir():
         if file.endswith('.png'):
-            h = file.split('_')[0]
-            if h not in cache:
-                cache[h] = [file]
-            else:
-                cache[h].append(file)
-    for k in cache.keys():
-        hori_join(sorted(cache[k]), k)
+            fnames.append(file)
+            tag_set.append(file.split('_')[0])
+    tag_set = list(set(tag_set))
+    # combine
+    for tag in tag_set:
+        names_match = []
+        for name in fnames:
+            if name.split('_')[0] == tag:
+                names_match.append(name)
+        hori_join(sorted(names_match), tag)
+
+if __name__ == "__main__":
+    get_png_combine()
