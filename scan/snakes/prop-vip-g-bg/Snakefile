@@ -1,0 +1,26 @@
+F2_START = 100
+F2_STEP = 500
+F2_END = 100
+
+F3_START = 4
+F3_END = 10
+
+F4_START = 2
+F4_END = 8
+
+localrules: all
+
+rule all:
+    input:
+        ai = expand('scans/{a}_{b}_{c}_{d}/',
+            a=range(8),
+            b=range(F2_START, F2_END + F2_STEP, F2_STEP),
+            c=range(F3_START, F3_END + 1),
+            d=range(F4_START, F4_END + 1))
+
+    shell:
+        '''
+        python analysis_gs.py {input.ai}
+        mkdir -p png
+        mv *.png png
+        '''

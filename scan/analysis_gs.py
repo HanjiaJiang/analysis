@@ -174,10 +174,10 @@ def str2list(list_str):
     for item in list_str:
         cache.append(np.array(item.split('/')[-2].split('_')).astype(int))
     cache = np.array(cache)
-    lvls_1 = list(set(cache[:, 0]))
-    lvls_2 = list(set(cache[:, 1]))
-    lvls_3 = list(set(cache[:, 2]))
-    lvls_4 = list(set(cache[:, 3]))
+    lvls_1 = sorted(list(set(cache[:, 0])))
+    lvls_2 = sorted(list(set(cache[:, 1])))
+    lvls_3 = sorted(list(set(cache[:, 2])))
+    lvls_4 = sorted(list(set(cache[:, 3])))
     return lvls_1, lvls_2, lvls_3, lvls_4
 
 # to-do: put into several functions
@@ -186,11 +186,11 @@ if __name__ == "__main__":
 
     # get input and output names
     inputs = sys.argv[1:]
-    lvls_1, lvls_2, lvls_g, lvls_bg = str2list(inputs)
-    print('levels =\n{}\n{}\n{}\n{}\n'.format(lvls_1, lvls_2, lvls_g, lvls_bg))
+    lvls_1, lvls_2, lvls_3, lvls_4 = str2list(inputs)
+    print('levels =\n{}\n{}\n{}\n{}\n'.format(lvls_1, lvls_2, lvls_3, lvls_4))
 
     # get dimension shape
-    input_shape = (len(layers), len(lvls_g), len(lvls_bg))
+    input_shape = (len(layers), len(lvls_3), len(lvls_4))
 
     print('data shape = {}\n'.format(input_shape))
 
@@ -205,8 +205,8 @@ if __name__ == "__main__":
             data_fr_vip = np.full(input_shape, np.nan)
             data_sf_spread = np.full(input_shape, np.nan)
             data_sf_amp = np.full(input_shape, np.nan)
-            for c, lvlg in enumerate(lvls_g):
-                for d, lvlbg in enumerate(lvls_bg):
+            for c, lvlg in enumerate(lvls_3):
+                for d, lvlbg in enumerate(lvls_4):
                     ai = read_data(os.path.join('scans', '{}_{}_{}_{}'.format(lvl1, lvl2, lvlg, lvlbg), 'ai.dat'))
                     fr = read_data(os.path.join('scans', '{}_{}_{}_{}'.format(lvl1, lvl2, lvlg, lvlbg), 'fr.dat'))
                     sf = read_data(os.path.join('scans', '{}_{}_{}_{}'.format(lvl1, lvl2, lvlg, lvlbg), 'sf.dat'))
@@ -235,17 +235,17 @@ if __name__ == "__main__":
             # ground state
             names_gs = []
             tag_gs = '({},{})_'.format(lvl1, lvl2)
-            names_gs.append(colormap(tag_gs + 'A', 'fr-exc', data_fr_exc, lvls_g, lvls_bg, criteria_fr[0], criteria_fr[1],
+            names_gs.append(colormap(tag_gs + 'A', 'fr-exc', data_fr_exc, lvls_3, lvls_4, criteria_fr[0], criteria_fr[1],
                      low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 30.0), cmap='Blues'))
-            names_gs.append(colormap(tag_gs + 'B', 'pair-corr', data_a, lvls_g, lvls_bg, criteria_corr[0], criteria_corr[1],
+            names_gs.append(colormap(tag_gs + 'B', 'pair-corr', data_a, lvls_3, lvls_4, criteria_corr[0], criteria_corr[1],
                      v_range=(-0.02, 0.02), fit_mtx=fitness_mtx))
-            names_gs.append(colormap(tag_gs + 'C', 'cv-isi', data_i, lvls_g, lvls_bg, criteria_cv[0], criteria_cv[1],
+            names_gs.append(colormap(tag_gs + 'C', 'cv-isi', data_i, lvls_3, lvls_4, criteria_cv[0], criteria_cv[1],
                      fit_mtx=fitness_mtx, v_range=(0.0, 1.5), cmap='Blues'))
-            names_gs.append(colormap(tag_gs + 'D', 'fr-pv', data_fr_pv, lvls_g, lvls_bg, -np.inf, np.inf,
+            names_gs.append(colormap(tag_gs + 'D', 'fr-pv', data_fr_pv, lvls_3, lvls_4, -np.inf, np.inf,
                      v_range=(0.0, 50.0), cmap='Blues'))
-            names_gs.append(colormap(tag_gs + 'E', 'fr-som', data_fr_som, lvls_g, lvls_bg, -np.inf, np.inf,
+            names_gs.append(colormap(tag_gs + 'E', 'fr-som', data_fr_som, lvls_3, lvls_4, -np.inf, np.inf,
                      v_range=(0.0, 50.0), cmap='Blues'))
-            names_gs.append(colormap(tag_gs + 'F', 'fr-vip', data_fr_vip, lvls_g, lvls_bg, -np.inf, np.inf,
+            names_gs.append(colormap(tag_gs + 'F', 'fr-vip', data_fr_vip, lvls_3, lvls_4, -np.inf, np.inf,
                      v_range=(0.0, 50.0), cmap='Blues'))
 
             # join plots
