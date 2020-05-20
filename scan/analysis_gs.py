@@ -18,6 +18,8 @@ do_interpol = True
 
 layers = ['L2/3', 'L4', 'L5', 'L6']
 
+scan_xy = 'g-bg'
+
 # criteria from Maksimov et al., 2018
 criteria_fr = [0.0, 10.0]
 criteria_corr = [0.0001, 0.008]
@@ -75,11 +77,15 @@ def colormap(prefix, name, data, xs, ys, low, high,
         vmax = high + (high - low) * 2
 
     # x and y labels to be improved
-    plt.xlabel('g\n')
-    plt.ylabel('bg_rate (spikes/s)', va='center', rotation='vertical')
-    # fig.text(0.16, 0.58, 'bg_rate (spikes/s)', va='center', rotation='vertical')
+    if scan_xy == 'som-vip':
+        xlbl = 'indegree_som\n'
+        ylbl = 'indegree_vip'
+    else:
+        xlbl = 'g\n'
+        ylbl = 'bg_rate (spikes/s)'
+    plt.xlabel(xlbl)
+    plt.ylabel(ylbl, va='center', rotation='vertical')
     plt.xticks(xs, rotation=30)
-    plt.yticks(ys)
     plt.xlim((xs[0], xs[-1]))
     plt.ylim((ys[0], ys[-1]))
 
@@ -123,17 +129,25 @@ def colormap(prefix, name, data, xs, ys, low, high,
         cs.cmap.set_under("firebrick")
 
         # mark layer labels (L2/3 ~ L6)
-        axs[k].text(xs[0] - 0.5*(xs[-1] - xs[0]), ys[0] + 0.5*(ys[-1] - ys[0]), layers[k])
+        if not (name == 'fr-vip' and k > 0):
+            axs[k].text(xs[0] - 0.6*(xs[-1] - xs[0]), ys[0] + 0.5*(ys[-1] - ys[0]), layers[k])
 
         # set plot aspect ratio
         axs[k].set_aspect(float((xs[-1] - xs[0])/(ys[-1] - ys[0])))
 
+        # set yticklabels
+        axs[k].set_yticklabels(ys, rotation=30)
+
+        # take off L4~L6 for vip
+        if name == 'fr-vip' and k > 0:
+            axs[k].axis('off')
+
 
     # colorbar
     cbar = fig.colorbar(cs, ax=axs.tolist(), orientation='horizontal', shrink=0.6)
-    # cbar = fig.colorbar(cs, cax=axins1, orientation='horizontal')
     cbar.ax.plot([low, low], [vmin, vmax], color='k', linewidth=2)
     cbar.ax.plot([high, high], [vmin, vmax], color='k', linewidth=2)
+    # extra criteria could not do cbar boundary because different for each layer
 
     name += '\nscore = {}'.format(np.count_nonzero(fit_mtx))
     fig.suptitle(name)
@@ -236,17 +250,17 @@ if __name__ == "__main__":
             names_gs = []
             tag_gs = '({},{})_'.format(lvl1, lvl2)
             names_gs.append(colormap(tag_gs + 'A', 'fr-exc', data_fr_exc, lvls_3, lvls_4, criteria_fr[0], criteria_fr[1],
-                     low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 30.0), cmap='Blues'))
+                     low_extra=exc_fr_low, high_extra=exc_fr_high, fit_mtx=fitness_mtx, v_range=(0.0, 20.0), cmap='Blues'))
             names_gs.append(colormap(tag_gs + 'B', 'pair-corr', data_a, lvls_3, lvls_4, criteria_corr[0], criteria_corr[1],
                      v_range=(-0.02, 0.02), fit_mtx=fitness_mtx))
             names_gs.append(colormap(tag_gs + 'C', 'cv-isi', data_i, lvls_3, lvls_4, criteria_cv[0], criteria_cv[1],
                      fit_mtx=fitness_mtx, v_range=(0.0, 1.5), cmap='Blues'))
             names_gs.append(colormap(tag_gs + 'D', 'fr-pv', data_fr_pv, lvls_3, lvls_4, -np.inf, np.inf,
-                     v_range=(0.0, 50.0), cmap='Blues'))
+                     v_range=(0.0, 40.0), cmap='Blues'))
             names_gs.append(colormap(tag_gs + 'E', 'fr-som', data_fr_som, lvls_3, lvls_4, -np.inf, np.inf,
-                     v_range=(0.0, 50.0), cmap='Blues'))
+                     v_range=(0.0, 40.0), cmap='Blues'))
             names_gs.append(colormap(tag_gs + 'F', 'fr-vip', data_fr_vip, lvls_3, lvls_4, -np.inf, np.inf,
-                     v_range=(0.0, 50.0), cmap='Blues'))
+                     v_range=(0.0, 40.0), cmap='Blues'))
 
             # join plots
             try:
