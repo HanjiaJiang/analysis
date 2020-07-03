@@ -52,7 +52,7 @@ def colormap(prefix, name, data, xs, ys, low, high,
     ys = np.array(ys)
 
     # the threshold for outer circle of delaunay triangles
-    delaunay_alpha = np.sqrt((xs[1]-xs[0])**2 + (ys[1]-ys[0])**2)
+    # delaunay_alpha = np.sqrt((xs[1]-xs[0])**2 + (ys[1]-ys[0])**2)
 
     # rotate_format = '%.1e'
     contour_color = 'black'
